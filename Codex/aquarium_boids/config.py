@@ -1,5 +1,6 @@
 OSC_HOST = "127.0.0.1"
 OSC_PORT = 7400
+PLAIN_UDP_PORT = 7401  # Max fallback via [netreceive -u 7401], no oscparse needed
 
 WIDTH = 1200
 HEIGHT = 750

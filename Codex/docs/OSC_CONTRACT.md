@@ -1,11 +1,40 @@
 # OSC contract — Acquario Boids → Max
 
-Default target:
+Default OSC target:
 
 ```text
 host: 127.0.0.1
 port: 7400
 ```
+
+Fallback Max/FUDI target, senza `oscparse`:
+
+```text
+host: 127.0.0.1
+port: 7401
+Max object: netreceive -u 7401
+```
+
+## Plain UDP fallback senza oscparse
+
+In parallelo all'OSC, Python invia anche messaggi testuali compatibili con Max `netreceive`:
+
+```text
+direct mean_speed energy center_x center_y density spread density_fader
+midi event_id midi_note velocity duration_ms layer_id section_id
+note event_id degree octave duration_beats velocity layer_id layer_name chord_degree section_id
+rest event_id duration_beats section_id
+```
+
+Quindi in Max puoi usare:
+
+```text
+netreceive -u 7401
+|
+route direct midi note rest
+```
+
+Questa è la soluzione consigliata se `oscparse` non esiste nella tua installazione di Max.
 
 ## Descriptor continui
 

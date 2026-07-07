@@ -5,8 +5,9 @@
 I file Max disponibili sono:
 
 ```text
-Codex/max/aquarium_receiver.maxpat       # solo debug/ricezione OSC
-Codex/max/aquarium_sound_preview.maxpat  # primo suono funzionante
+Codex/max/aquarium_receiver.maxpat          # solo debug/ricezione OSC, richiede oscparse
+Codex/max/aquarium_sound_preview.maxpat     # primo suono OSC, richiede oscparse
+Codex/max/aquarium_netreceive_sound.maxpat  # fallback senza oscparse, consigliato nel tuo caso
 ```
 
 Max **non visualizza il video dei boids**.  
@@ -30,7 +31,15 @@ Max = ricezione OSC + suono
 
 ## 1. Apri Max
 
-Per sentire subito qualcosa, apri:
+Se Max dice che `oscparse` non esiste, apri questa patch:
+
+```text
+Codex/max/aquarium_netreceive_sound.maxpat
+```
+
+Questa patch non usa OSC parsing: riceve messaggi testuali Max/FUDI via `netreceive -u 7401`.
+
+Se invece il tuo Max supporta `oscparse`, puoi aprire:
 
 ```text
 Codex/max/aquarium_sound_preview.maxpat
@@ -42,10 +51,11 @@ Se vuoi solo controllare i messaggi OSC, apri invece:
 Codex/max/aquarium_receiver.maxpat
 ```
 
-La patch ascolta sulla porta UDP:
+Le porte sono:
 
 ```text
-7400
+7400 = OSC standard, per patch con oscparse
+7401 = plain UDP / Max messages, per patch con netreceive senza oscparse
 ```
 
 Dentro la patch trovi:

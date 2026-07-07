@@ -19,8 +19,9 @@ Max deve ascoltare su UDP `7400`.
 Patch disponibili:
 
 ```text
-Codex/max/aquarium_receiver.maxpat       # debug/ricezione OSC
-Codex/max/aquarium_sound_preview.maxpat  # primo suono: drone controllato dai boids + MIDI out opzionale
+Codex/max/aquarium_receiver.maxpat          # debug/ricezione OSC, richiede oscparse
+Codex/max/aquarium_sound_preview.maxpat     # primo suono OSC, richiede oscparse
+Codex/max/aquarium_netreceive_sound.maxpat  # fallback consigliato se oscparse non esiste
 ```
 
 ## Controlli
