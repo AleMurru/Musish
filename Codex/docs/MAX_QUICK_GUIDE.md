@@ -2,14 +2,15 @@
 
 ## Punto importante
 
-Il file Max:
+I file Max disponibili sono:
 
 ```text
-Codex/max/aquarium_receiver.maxpat
+Codex/max/aquarium_receiver.maxpat       # solo debug/ricezione OSC
+Codex/max/aquarium_sound_preview.maxpat  # primo suono funzionante
 ```
 
-**non visualizza il video dei boids**.  
-Per ora il video/simulazione viene visualizzato dalla finestra Python/Pygame quando esegui:
+Max **non visualizza il video dei boids**.  
+Il video/simulazione viene visualizzato dalla finestra Python/Pygame quando esegui:
 
 ```bash
 cd Codex
@@ -29,7 +30,13 @@ Max = ricezione OSC + suono
 
 ## 1. Apri Max
 
-Apri:
+Per sentire subito qualcosa, apri:
+
+```text
+Codex/max/aquarium_sound_preview.maxpat
+```
+
+Se vuoi solo controllare i messaggi OSC, apri invece:
 
 ```text
 Codex/max/aquarium_receiver.maxpat
@@ -83,10 +90,13 @@ Dovresti vedere messaggi stampati tipo:
 descriptors: ...
 direct: ...
 music_note: ...
+music_midi: ...
 music_rest: ...
 ```
 
 Se vedi questi messaggi, Python e Max stanno comunicando correttamente.
+
+Nella patch `aquarium_sound_preview.maxpat`, clicca su `ezdac~` per accendere l'audio. Sentirai un drone semplice controllato da velocità/energia dei boids.
 
 ---
 
@@ -138,8 +148,17 @@ Usalo per modulare parametri audio in tempo reale:
 /music/note event_id degree octave duration_beats velocity layer_id layer_name chord_degree section_id
 ```
 
-Questi eventi sono simbolici.  
-In Max devi convertire `degree + chord_degree + octave` in una nota MIDI o frequenza.
+Questi eventi sono simbolici.
+
+Per prototipi Max rapidi ora esiste anche:
+
+```text
+/music/midi event_id midi_note velocity duration_ms layer_id section_id
+```
+
+Questo messaggio è già convertito in MIDI note e viene mandato anche alla sezione `makenote -> noteout` nella patch `aquarium_sound_preview.maxpat`.
+
+Se vuoi lavorare in modo più musicale e flessibile, usa ancora `/music/note` e converti `degree + chord_degree + octave` in una nota MIDI o frequenza.
 
 Formula consigliata:
 
@@ -170,12 +189,15 @@ Controlla:
 
 ## Stato attuale
 
-Attualmente la patch Max è solo un **receiver/debug patch**.  
-Serve a verificare che i dati arrivino.
+Ora ci sono due livelli:
 
-Il prossimo step sarà creare una patch Max sonora vera, ad esempio:
+1. `aquarium_receiver.maxpat` — debug/ricezione OSC.
+2. `aquarium_sound_preview.maxpat` — primo suono funzionante: drone controllato da `/aquarium/direct` + MIDI out opzionale da `/music/midi`.
+
+Il prossimo step sarà creare una patch Max più musicale con:
 
 ```text
-/music/note → conversione degree→MIDI → synth/poly~
-/aquarium/direct → modulazione filtri/riverbero/panning
+/music/midi o /music/note → synth/poly~
+/aquarium/direct → filtri/riverbero/panning
+layer_id → strumenti diversi
 ```

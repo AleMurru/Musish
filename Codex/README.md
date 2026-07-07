@@ -14,10 +14,13 @@ pip install -r requirements.txt
 python main.py
 ```
 
-Max deve ascoltare su UDP `7400`. Patch minima:
+Max deve ascoltare su UDP `7400`.
+
+Patch disponibili:
 
 ```text
-Codex/max/aquarium_receiver.maxpat
+Codex/max/aquarium_receiver.maxpat       # debug/ricezione OSC
+Codex/max/aquarium_sound_preview.maxpat  # primo suono: drone controllato dai boids + MIDI out opzionale
 ```
 
 ## Controlli
@@ -44,6 +47,7 @@ Messaggi principali:
 /aquarium/descriptors ...
 /aquarium/direct ...
 /music/note ...
+/music/midi ...
 /music/rest ...
 ```
 

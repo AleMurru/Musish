@@ -2,9 +2,16 @@ from __future__ import annotations
 
 from pythonosc.udp_client import SimpleUDPClient
 
+from .config import BPM, ROOT_MIDI, SCALE_INTERVALS
 from .controls import RuntimeControls
 from .descriptors import DESCRIPTOR_ORDER
 from .markov import LAYERS, MusicEvent
+
+
+def event_to_midi(event: MusicEvent) -> int:
+    scale_index = (event.degree + event.chord_degree) % len(SCALE_INTERVALS)
+    octave_shift = event.octave * 12
+    return int(ROOT_MIDI + SCALE_INTERVALS[scale_index] + octave_shift)
 
 
 class OscSender:
@@ -38,6 +45,8 @@ class OscSender:
     def send_music_event(self, event: MusicEvent) -> None:
         self.client.send_message("/music/event", event.osc_payload())
         if event.event_type == "note":
+            midi_note = event_to_midi(event)
+            duration_ms = int(event.duration_beats * 60000 / BPM)
             self.client.send_message(
                 "/music/note",
                 [
@@ -49,6 +58,17 @@ class OscSender:
                     event.layer_id,
                     LAYERS[event.layer_id],
                     event.chord_degree,
+                    event.section_id,
+                ],
+            )
+            self.client.send_message(
+                "/music/midi",
+                [
+                    event.event_id,
+                    midi_note,
+                    event.velocity,
+                    duration_ms,
+                    event.layer_id,
                     event.section_id,
                 ],
             )

@@ -72,6 +72,14 @@ Evento nota, più comodo da routare in Max:
 /music/note event_id degree octave duration_beats velocity layer_id layer_name chord_degree section_id
 ```
 
+Evento MIDI già convertito, utile per prototipi sonori veloci in Max:
+
+```text
+/music/midi event_id midi_note velocity duration_ms layer_id section_id
+```
+
+Questo messaggio viene generato usando `ROOT_MIDI` e `SCALE_INTERVALS` in `aquarium_boids/config.py`.
+
 Evento pausa:
 
 ```text
