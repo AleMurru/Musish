@@ -12,8 +12,10 @@ class RuntimeControls:
     cohesion_weight: float = 0.9
     separation_weight: float = 1.35
     noise_weight: float = 0.18
-    food_strength: float = 1.0
-    predator_strength: float = 1.0
+    food_strength: float = 1.0  # mouse-left attractor multiplier
+    predator_strength: float = 1.0  # mouse-right repeller multiplier
+    food_amount: float = 0.0  # virtual center attractor controlled by MIDIMIX
+    predator_amount: float = 0.0  # virtual center repeller controlled by MIDIMIX
     section_id: int = 0
     paused: bool = False
 
@@ -30,5 +32,7 @@ class RuntimeControls:
             self.noise_weight,
             self.food_strength,
             self.predator_strength,
+            self.food_amount,
+            self.predator_amount,
             float(self.section_id),
         ]

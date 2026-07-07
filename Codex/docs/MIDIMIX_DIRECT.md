@@ -43,7 +43,7 @@ Se muovi un fader, dovresti vedere:
 
 ```text
 [midi] cc=19 value=87 channel=1
-[midi-map] cc=19 -> density_fader = 0.685
+[midi-map] cc=19 -> alignment_weight = 2.055
 ```
 
 ---
@@ -60,13 +60,13 @@ Tabella:
 
 ```python
 MIDI_CC_MAPPING = {
-    19: ("density_fader", 0.0, 1.0, False),
-    20: ("alignment_weight", 0.0, 3.0, False),
-    21: ("cohesion_weight", 0.0, 3.0, False),
-    22: ("separation_weight", 0.0, 4.0, False),
-    23: ("noise_weight", 0.0, 1.5, False),
-    24: ("food_strength", 0.0, 3.0, False),
-    25: ("predator_strength", 0.0, 3.0, False),
+    19: ("alignment_weight", 0.0, 3.0, False),
+    20: ("cohesion_weight", 0.0, 3.0, False),
+    21: ("separation_weight", 0.0, 4.0, False),
+    22: ("noise_weight", 0.0, 1.5, False),
+    23: ("food_amount", 0.0, 3.0, False),
+    24: ("predator_amount", 0.0, 3.0, False),
+    25: ("density_fader", 0.0, 1.0, False),
     26: ("section_id", 0.0, 5.0, True),
 }
 ```
@@ -75,13 +75,13 @@ Significato:
 
 | CC | Parametro | Range | Effetto |
 |---:|---|---:|---|
-| 19 | `density_fader` | 0..1 | quantità eventi Markov |
-| 20 | `alignment_weight` | 0..3 | allineamento boids |
-| 21 | `cohesion_weight` | 0..3 | compattezza branco |
-| 22 | `separation_weight` | 0..4 | dispersione |
-| 23 | `noise_weight` | 0..1.5 | turbolenza |
-| 24 | `food_strength` | 0..3 | forza attrattore mouse sinistro |
-| 25 | `predator_strength` | 0..3 | forza predatore mouse destro |
+| 19 | `alignment_weight` | 0..3 | allineamento boids |
+| 20 | `cohesion_weight` | 0..3 | compattezza branco |
+| 21 | `separation_weight` | 0..4 | dispersione |
+| 22 | `noise_weight` | 0..1.5 | turbolenza |
+| 23 | `food_amount` | 0..3 | attrattore virtuale verso il centro |
+| 24 | `predator_amount` | 0..3 | repulsore virtuale dal centro |
+| 25 | `density_fader` | 0..1 | quantità eventi Markov |
 | 26 | `section_id` | 0..5 int | sezione musicale |
 
 ---
@@ -106,13 +106,13 @@ Procedura:
 Esempio: se il primo fader stampa `cc=7`, modifica:
 
 ```python
-7: ("density_fader", 0.0, 1.0, False),
+7: ("alignment_weight", 0.0, 3.0, False),
 ```
 
 al posto di:
 
 ```python
-19: ("density_fader", 0.0, 1.0, False),
+19: ("alignment_weight", 0.0, 3.0, False),
 ```
 
 Poi riavvia:

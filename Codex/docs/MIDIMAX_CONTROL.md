@@ -61,14 +61,14 @@ Il musicista può usare la parte `ctlin` per fare MIDI learn e poi collegare i C
 
 | MIDIMAX | Messaggio a Python | Range consigliato | Effetto |
 |---|---|---:|---|
-| Fader 1 | `control density_fader $1` | 0..1 | densità eventi Markov |
-| Fader 2 | `control alignment_weight $1` | 0..3 | allineamento boids |
-| Fader 3 | `control cohesion_weight $1` | 0..3 | compattezza branco |
-| Fader 4 | `control separation_weight $1` | 0..4 | dispersione / distanza |
-| Fader 5 | `control noise_weight $1` | 0..1.5 | turbolenza |
-| Fader 6 | `control section_id $1` | 0..5 intero | sezione musicale |
-| Knob 1 | `control food_strength $1` | 0..3 | forza attrattore mouse sinistro |
-| Knob 2 | `control predator_strength $1` | 0..3 | forza predatore mouse destro |
+| Fader 1 | `control alignment_weight $1` | 0..3 | allineamento boids |
+| Fader 2 | `control cohesion_weight $1` | 0..3 | compattezza branco |
+| Fader 3 | `control separation_weight $1` | 0..4 | dispersione / distanza |
+| Fader 4 | `control noise_weight $1` | 0..1.5 | turbolenza |
+| Fader 5 | `control food_amount $1` | 0..3 | attrattore virtuale verso il centro |
+| Fader 6 | `control predator_amount $1` | 0..3 | repulsore virtuale dal centro |
+| Fader 7 | `control density_fader $1` | 0..1 | densità eventi Markov |
+| Fader 8 | `control section_id $1` | 0..5 intero | sezione musicale |
 
 ---
 
@@ -88,21 +88,21 @@ message: control parametro $1
 udpsend 127.0.0.1 7500
 ```
 
-Esempio per `density_fader`, se il fader manda CC 1:
+Esempio per `alignment_weight`, se il fader manda CC 1:
 
 ```text
 ctlin
 |
 route 1
 |
-scale 0 127 0. 1.
+scale 0 127 0. 3.
 |
-control density_fader $1
+control alignment_weight $1
 |
 udpsend 127.0.0.1 7500
 ```
 
-Esempio per `alignment_weight`, se il fader manda CC 2:
+Esempio per `cohesion_weight`, se il fader manda CC 2:
 
 ```text
 ctlin
@@ -111,7 +111,7 @@ route 2
 |
 scale 0 127 0. 3.
 |
-control alignment_weight $1
+control cohesion_weight $1
 |
 udpsend 127.0.0.1 7500
 ```

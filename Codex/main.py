@@ -100,7 +100,7 @@ def draw_hud(surface: pygame.Surface, font: pygame.font.Font, controls: RuntimeC
         "Acquario / Boids -> Max | MIDIMIX direct + Max control ready",
         f"density_fader UP/DOWN: {controls.density_fader:.2f} | section 1-6: {controls.section_name}",
         f"A/Z align {controls.alignment_weight:.2f} | S/X cohesion {controls.cohesion_weight:.2f} | D/C separation {controls.separation_weight:.2f} | N/M noise {controls.noise_weight:.2f}",
-        f"food_strength {controls.food_strength:.2f} | predator_strength {controls.predator_strength:.2f}",
+        f"food_amount {controls.food_amount:.2f} | predator_amount {controls.predator_amount:.2f} | mouse food/pred {controls.food_strength:.2f}/{controls.predator_strength:.2f}",
         "Mouse left = food/attractor | mouse right = predator/repeller | SPACE pause | R reset",
         f"OSC out: {OSC_HOST}:{OSC_PORT} | plain out: 7401 | control in: {CONTROL_PORT}",
         f"mean_speed {descriptors.get('mean_speed', 0):.2f} | density {descriptors.get('density', 0):.2f} | spread {descriptors.get('spread', 0):.2f} | coherence {descriptors.get('direction_coherence', 0):.2f}",
@@ -167,6 +167,10 @@ def main() -> None:
         mouse_pos = Vector2(pygame.mouse.get_pos())
         attractor = mouse_pos if mouse_buttons[0] else None
         repeller = mouse_pos if mouse_buttons[2] else None
+        if attractor is None and controls.food_amount > 0.01:
+            attractor = Vector2(WIDTH * 0.5, HEIGHT * 0.5)
+        if repeller is None and controls.predator_amount > 0.01:
+            repeller = Vector2(WIDTH * 0.5, HEIGHT * 0.5)
 
         if not controls.paused:
             for boid in flock:

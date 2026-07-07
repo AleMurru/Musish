@@ -98,7 +98,7 @@ Nel terminale dovresti vedere qualcosa tipo:
 
 ```text
 [midi] cc=19 value=87 channel=1
-[midi-map] cc=19 -> density_fader = 0.685
+[midi-map] cc=19 -> alignment_weight = 2.055
 ```
 
 Ci sono due livelli di messaggi:
@@ -118,7 +118,7 @@ Significa:
 ## Messaggio 2 — Mapping applicato
 
 ```text
-[midi-map] cc=19 -> density_fader = 0.685
+[midi-map] cc=19 -> alignment_weight = 2.055
 ```
 
 Significa che quel CC è già mappato a un parametro di `main.py`.
@@ -139,8 +139,8 @@ Trova:
 
 ```python
 MIDI_CC_MAPPING = {
-    19: ("density_fader", 0.0, 1.0, False),
-    20: ("alignment_weight", 0.0, 3.0, False),
+    19: ("alignment_weight", 0.0, 3.0, False),
+    20: ("cohesion_weight", 0.0, 3.0, False),
     ...
 }
 ```
@@ -155,7 +155,7 @@ allora modifica la tabella così:
 
 ```python
 MIDI_CC_MAPPING = {
-    7: ("density_fader", 0.0, 1.0, False),
+    7: ("alignment_weight", 0.0, 3.0, False),
     ...
 }
 ```
@@ -172,13 +172,13 @@ python main.py
 
 | Fader | Parametro Python | Range | Effetto visuale/musicale |
 |---|---|---:|---|
-| Fader 1 | `density_fader` | 0..1 | più/meno eventi Markov |
-| Fader 2 | `alignment_weight` | 0..3 | branco più allineato |
-| Fader 3 | `cohesion_weight` | 0..3 | branco più compatto |
-| Fader 4 | `separation_weight` | 0..4 | boids più distanti |
-| Fader 5 | `noise_weight` | 0..1.5 | turbolenza/caos |
-| Fader 6 | `food_strength` | 0..3 | forza attrattore mouse sinistro |
-| Fader 7 | `predator_strength` | 0..3 | forza repulsore mouse destro |
+| Fader 1 | `alignment_weight` | 0..3 | branco più allineato |
+| Fader 2 | `cohesion_weight` | 0..3 | branco più compatto |
+| Fader 3 | `separation_weight` | 0..4 | boids più distanti |
+| Fader 4 | `noise_weight` | 0..1.5 | turbolenza/caos |
+| Fader 5 | `food_amount` | 0..3 | attrattore virtuale verso il centro |
+| Fader 6 | `predator_amount` | 0..3 | repulsore virtuale dal centro |
+| Fader 7 | `density_fader` | 0..1 | più/meno eventi Markov |
 | Fader 8 | `section_id` | 0..5 | sezione musicale |
 
 Le sezioni sono:
@@ -201,13 +201,13 @@ Nella finestra dei boids, in alto, ci sono i valori correnti.
 Muovendo i fader dovresti vedere cambiare:
 
 ```text
-density_fader
 alignment
 cohesion
 separation
 noise
-food_strength
-predator_strength
+food_amount
+predator_amount
+density_fader
 section
 ```
 
@@ -252,7 +252,22 @@ Effetto atteso:
 - basso = boids più vicini;
 - alto = boids si evitano di più.
 
-## Test D — Density fader
+## Test D — Food / Predator virtuali
+
+Muovi:
+
+```text
+food_amount
+predator_amount
+```
+
+Effetto atteso:
+
+- `food_amount` alto = i boids vengono attratti verso il centro;
+- `predator_amount` alto = i boids vengono respinti dal centro;
+- questi cambiamenti alterano velocità, densità e spread, quindi modificano anche il suono in Max.
+
+## Test E — Density fader
 
 Muovi:
 
@@ -350,11 +365,14 @@ Esempi:
 
 | Fader | Effetto atteso su Max |
 |---|---|
-| `density_fader` | più eventi/blip Markov |
-| `noise_weight` | suono più instabile perché i boids si agitano |
+| `alignment_weight` | cambia coerenza direzionale e stabilità del movimento |
 | `cohesion_weight` | cambia density, quindi cambia secondo oscillatore |
+| `separation_weight` | cambia dispersione/spread del branco |
+| `noise_weight` | suono più instabile perché i boids si agitano |
+| `food_amount` | attrazione al centro, aumento compattezza/energia |
+| `predator_amount` | repulsione dal centro, fuga/energia più alta |
+| `density_fader` | più eventi/blip Markov |
 | `section_id` | cambia carattere/layer degli eventi |
-| `predator_strength` + mouse destro | fuga più forte, energia più alta |
 
 ---
 

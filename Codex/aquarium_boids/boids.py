@@ -127,12 +127,14 @@ class Boid:
 
         # Performance gestures: left mouse = food/attractor, right mouse = predator/repeller.
         if attractor is not None:
-            self.acceleration += self._steer_towards(attractor - self.position) * (0.9 * controls.food_strength)
+            food_force = controls.food_amount if controls.food_amount > 0.0 else controls.food_strength
+            self.acceleration += self._steer_towards(attractor - self.position) * (0.9 * food_force)
         if repeller is not None:
             delta = self.position - repeller
             distance = max(delta.length(), 1.0)
             if distance < 220:
-                self.acceleration += self._steer_towards(delta) * (2.8 * controls.predator_strength * (1.0 - distance / 220.0))
+                predator_force = controls.predator_amount if controls.predator_amount > 0.0 else controls.predator_strength
+                self.acceleration += self._steer_towards(delta) * (2.8 * predator_force * (1.0 - distance / 220.0))
 
     def update(self, dt_scale: float = 1.0) -> None:
         self.velocity += self.acceleration * dt_scale

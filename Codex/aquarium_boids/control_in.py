@@ -116,9 +116,13 @@ def apply_control(command: ControlCommand, controls: RuntimeControls) -> None:
         controls.separation_weight = max(0.0, min(4.0, x))
     elif name in {"noise", "noise_weight", "turbulence"}:
         controls.noise_weight = max(0.0, min(1.5, x))
-    elif name in {"food", "food_strength", "attractor"}:
+    elif name in {"food", "food_amount", "attractor"}:
+        controls.food_amount = max(0.0, min(3.0, x))
+    elif name in {"food_strength", "mouse_food_strength"}:
         controls.food_strength = max(0.0, min(3.0, x))
-    elif name in {"predator", "predator_strength", "repeller"}:
+    elif name in {"predator", "predator_amount", "repeller"}:
+        controls.predator_amount = max(0.0, min(3.0, x))
+    elif name in {"predator_strength", "mouse_predator_strength"}:
         controls.predator_strength = max(0.0, min(3.0, x))
     elif name in {"section", "section_id"}:
         controls.section_id = _as_section(value)

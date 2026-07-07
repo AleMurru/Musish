@@ -19,32 +19,32 @@
       { "box": { "id": "c-udp", "maxclass": "comment", "text": "All message boxes below go to Python main.py. Python prints [control] name = value.", "patching_rect": [30.0, 155.0, 600.0, 20.0] } },
 
       { "box": { "id": "f1", "maxclass": "flonum", "patching_rect": [30.0, 205.0, 70.0, 22.0] } },
-      { "box": { "id": "m1", "maxclass": "message", "text": "control density_fader $1", "patching_rect": [115.0, 205.0, 170.0, 22.0] } },
-      { "box": { "id": "c1", "maxclass": "comment", "text": "0..1 | amount of Markov events / collective -> individual", "patching_rect": [305.0, 207.0, 380.0, 20.0] } },
+      { "box": { "id": "m1", "maxclass": "message", "text": "control alignment_weight $1", "patching_rect": [115.0, 205.0, 190.0, 22.0] } },
+      { "box": { "id": "c1", "maxclass": "comment", "text": "0..3 | boids align to neighbors", "patching_rect": [320.0, 207.0, 320.0, 20.0] } },
 
       { "box": { "id": "f2", "maxclass": "flonum", "patching_rect": [30.0, 250.0, 70.0, 22.0] } },
-      { "box": { "id": "m2", "maxclass": "message", "text": "control alignment_weight $1", "patching_rect": [115.0, 250.0, 190.0, 22.0] } },
-      { "box": { "id": "c2", "maxclass": "comment", "text": "0..3 | boids align to neighbors", "patching_rect": [320.0, 252.0, 320.0, 20.0] } },
+      { "box": { "id": "m2", "maxclass": "message", "text": "control cohesion_weight $1", "patching_rect": [115.0, 250.0, 190.0, 22.0] } },
+      { "box": { "id": "c2", "maxclass": "comment", "text": "0..3 | boids aggregate / school compactness", "patching_rect": [320.0, 252.0, 340.0, 20.0] } },
 
       { "box": { "id": "f3", "maxclass": "flonum", "patching_rect": [30.0, 295.0, 70.0, 22.0] } },
-      { "box": { "id": "m3", "maxclass": "message", "text": "control cohesion_weight $1", "patching_rect": [115.0, 295.0, 190.0, 22.0] } },
-      { "box": { "id": "c3", "maxclass": "comment", "text": "0..3 | boids aggregate / school compactness", "patching_rect": [320.0, 297.0, 340.0, 20.0] } },
+      { "box": { "id": "m3", "maxclass": "message", "text": "control separation_weight $1", "patching_rect": [115.0, 295.0, 200.0, 22.0] } },
+      { "box": { "id": "c3", "maxclass": "comment", "text": "0..4 | collision avoidance / dispersion", "patching_rect": [330.0, 297.0, 330.0, 20.0] } },
 
       { "box": { "id": "f4", "maxclass": "flonum", "patching_rect": [30.0, 340.0, 70.0, 22.0] } },
-      { "box": { "id": "m4", "maxclass": "message", "text": "control separation_weight $1", "patching_rect": [115.0, 340.0, 200.0, 22.0] } },
-      { "box": { "id": "c4", "maxclass": "comment", "text": "0..4 | collision avoidance / dispersion", "patching_rect": [330.0, 342.0, 330.0, 20.0] } },
+      { "box": { "id": "m4", "maxclass": "message", "text": "control noise_weight $1", "patching_rect": [115.0, 340.0, 175.0, 22.0] } },
+      { "box": { "id": "c4", "maxclass": "comment", "text": "0..1.5 | turbulence / chaos", "patching_rect": [305.0, 342.0, 320.0, 20.0] } },
 
       { "box": { "id": "f5", "maxclass": "flonum", "patching_rect": [30.0, 385.0, 70.0, 22.0] } },
-      { "box": { "id": "m5", "maxclass": "message", "text": "control noise_weight $1", "patching_rect": [115.0, 385.0, 175.0, 22.0] } },
-      { "box": { "id": "c5", "maxclass": "comment", "text": "0..1.5 | turbulence / chaos", "patching_rect": [305.0, 387.0, 320.0, 20.0] } },
+      { "box": { "id": "m5", "maxclass": "message", "text": "control food_amount $1", "patching_rect": [115.0, 385.0, 170.0, 22.0] } },
+      { "box": { "id": "c5", "maxclass": "comment", "text": "0..3 | virtual attractor toward center", "patching_rect": [305.0, 387.0, 320.0, 20.0] } },
 
       { "box": { "id": "f6", "maxclass": "flonum", "patching_rect": [30.0, 430.0, 70.0, 22.0] } },
-      { "box": { "id": "m6", "maxclass": "message", "text": "control food_strength $1", "patching_rect": [115.0, 430.0, 175.0, 22.0] } },
-      { "box": { "id": "c6", "maxclass": "comment", "text": "0..3 | strength of mouse-left attractor/food", "patching_rect": [305.0, 432.0, 360.0, 20.0] } },
+      { "box": { "id": "m6", "maxclass": "message", "text": "control predator_amount $1", "patching_rect": [115.0, 430.0, 195.0, 22.0] } },
+      { "box": { "id": "c6", "maxclass": "comment", "text": "0..3 | virtual repeller from center", "patching_rect": [325.0, 432.0, 360.0, 20.0] } },
 
       { "box": { "id": "f7", "maxclass": "flonum", "patching_rect": [30.0, 475.0, 70.0, 22.0] } },
-      { "box": { "id": "m7", "maxclass": "message", "text": "control predator_strength $1", "patching_rect": [115.0, 475.0, 195.0, 22.0] } },
-      { "box": { "id": "c7", "maxclass": "comment", "text": "0..3 | strength of mouse-right predator/repeller", "patching_rect": [325.0, 477.0, 380.0, 20.0] } },
+      { "box": { "id": "m7", "maxclass": "message", "text": "control density_fader $1", "patching_rect": [115.0, 475.0, 170.0, 22.0] } },
+      { "box": { "id": "c7", "maxclass": "comment", "text": "0..1 | secondary: Markov event density", "patching_rect": [305.0, 477.0, 380.0, 20.0] } },
 
       { "box": { "id": "f8", "maxclass": "flonum", "patching_rect": [30.0, 520.0, 70.0, 22.0] } },
       { "box": { "id": "m8", "maxclass": "message", "text": "control section_id $1", "patching_rect": [115.0, 520.0, 160.0, 22.0] } },

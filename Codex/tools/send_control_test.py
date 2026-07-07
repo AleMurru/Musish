@@ -21,13 +21,13 @@ PORT = 7500
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 messages = [
-    "control density_fader 0.85;\n",
     "control alignment_weight 2.2;\n",
     "control cohesion_weight 2.4;\n",
     "control separation_weight 0.7;\n",
     "control noise_weight 0.65;\n",
-    "control food_strength 1.8;\n",
-    "control predator_strength 2.3;\n",
+    "control food_amount 1.8;\n",
+    "control predator_amount 2.3;\n",
+    "control density_fader 0.85;\n",
     "control section_id 3;\n",
 ]
 
@@ -38,13 +38,13 @@ for msg in messages:
 
 print("Reset to calmer values")
 for msg in [
-    "control density_fader 0.25;\n",
     "control alignment_weight 1.0;\n",
     "control cohesion_weight 0.9;\n",
     "control separation_weight 1.35;\n",
     "control noise_weight 0.18;\n",
-    "control food_strength 1.0;\n",
-    "control predator_strength 1.0;\n",
+    "control food_amount 0.0;\n",
+    "control predator_amount 0.0;\n",
+    "control density_fader 0.25;\n",
     "control section_id 0;\n",
 ]:
     print("send", msg.strip())

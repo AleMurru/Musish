@@ -66,7 +66,7 @@ Sono inviati anche come indirizzi separati:
 ## Controlli performativi
 
 ```text
-/aquarium/controls density_fader alignment cohesion separation noise food_strength predator_strength section_id
+/aquarium/controls density_fader alignment cohesion separation noise food_strength predator_strength food_amount predator_amount section_id
 /aquarium/section section_id section_name
 ```
 

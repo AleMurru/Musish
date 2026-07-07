@@ -301,14 +301,14 @@ Max sound rendering
 
 | Fader/knob MIDIMAX | Parametro Python | Effetto |
 |---|---|---|
-| Fader 1 | `density_fader` | quantità di eventi / collettivo-individuale |
-| Fader 2 | `alignment_weight` | quanto i boids si allineano |
-| Fader 3 | `cohesion_weight` | quanto il branco si compatta |
-| Fader 4 | `separation_weight` | quanto si evitano / si disperdono |
-| Fader 5 | `noise_weight` | caos/turbolenza |
-| Fader 6 | `section_id` | intro/growth/dense/chaos/release/outro |
-| Knob 1 | attrattore/food amount | forza del cibo |
-| Knob 2 | predator amount | forza del predatore |
+| Fader 1 | `alignment_weight` | quanto i boids si allineano |
+| Fader 2 | `cohesion_weight` | quanto il branco si compatta |
+| Fader 3 | `separation_weight` | quanto si evitano / si disperdono |
+| Fader 4 | `noise_weight` | caos/turbolenza |
+| Fader 5 | `food_amount` | attrattore virtuale verso il centro |
+| Fader 6 | `predator_amount` | repulsore virtuale dal centro |
+| Fader 7 | `density_fader` | quantità di eventi / collettivo-individuale |
+| Fader 8 | `section_id` | intro/growth/dense/chaos/release/outro |
 | Knob 3 | master FX in Max | riverbero/delay |
 | Knob 4 | brightness/filter in Max | timbro globale |
 
@@ -319,7 +319,7 @@ Max sound rendering
    - parsing di messaggi `control parametro valore`;
    - aggiornamento live di `RuntimeControls`;
    - tastiera/mouse mantenuti come fallback;
-   - `food_strength` e `predator_strength` controllabili esternamente.
+   - `food_amount` e `predator_amount` controllabili esternamente come forze virtuali automatiche.
 
 2. In Max:
    - template pronto in `Codex/max/midimax_control_template.maxpat`;
@@ -336,11 +336,13 @@ Porta proposta:
 Messaggi:
 
 ```text
-/control/density_fader value_0_1
 /control/alignment_weight value_0_3
 /control/cohesion_weight value_0_3
 /control/separation_weight value_0_4
-/control/noise_weight value_0_1
+/control/noise_weight value_0_1_5
+/control/food_amount value_0_3
+/control/predator_amount value_0_3
+/control/density_fader value_0_1
 /control/section_id value_0_5
 ```
 

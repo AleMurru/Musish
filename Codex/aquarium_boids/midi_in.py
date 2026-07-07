@@ -151,5 +151,9 @@ def apply_parameter(controls: RuntimeControls, parameter: str, value: float | in
         controls.food_strength = max(0.0, min(3.0, float(value)))
     elif parameter == "predator_strength":
         controls.predator_strength = max(0.0, min(3.0, float(value)))
+    elif parameter == "food_amount":
+        controls.food_amount = max(0.0, min(3.0, float(value)))
+    elif parameter == "predator_amount":
+        controls.predator_amount = max(0.0, min(3.0, float(value)))
     elif parameter == "section_id":
         controls.section_id = max(0, min(5, int(value)))

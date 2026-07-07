@@ -12,13 +12,15 @@ MIDI_DEBUG = True  # prints incoming CCs, useful for learning the real fader num
 # NOTE: AKAI MIDIMIX CC numbers can vary by preset. If the mapping does not react,
 # move faders and read printed CC numbers in the terminal, then edit this table.
 MIDI_CC_MAPPING = {
-    19: ("density_fader", 0.0, 1.0, False),
-    20: ("alignment_weight", 0.0, 3.0, False),
-    21: ("cohesion_weight", 0.0, 3.0, False),
-    22: ("separation_weight", 0.0, 4.0, False),
-    23: ("noise_weight", 0.0, 1.5, False),
-    24: ("food_strength", 0.0, 3.0, False),
-    25: ("predator_strength", 0.0, 3.0, False),
+    # Primary ecosystem controls: these change boids first, then sound follows descriptors.
+    19: ("alignment_weight", 0.0, 3.0, False),
+    20: ("cohesion_weight", 0.0, 3.0, False),
+    21: ("separation_weight", 0.0, 4.0, False),
+    22: ("noise_weight", 0.0, 1.5, False),
+    23: ("food_amount", 0.0, 3.0, False),
+    24: ("predator_amount", 0.0, 3.0, False),
+    # Secondary musical controls.
+    25: ("density_fader", 0.0, 1.0, False),
     26: ("section_id", 0.0, 5.0, True),
 }
 

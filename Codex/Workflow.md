@@ -84,13 +84,13 @@ Python manda dati a Max
 
 | MIDIMIX | Controllo in `main.py` | Effetto |
 |---|---|---|
-| Fader 1 | `density_fader` | più/meno eventi Markov |
-| Fader 2 | `alignment_weight` | branco più allineato |
-| Fader 3 | `cohesion_weight` | branco più compatto |
-| Fader 4 | `separation_weight` | pesci più distanti |
-| Fader 5 | `noise_weight` | più caos/turbolenza |
-| Fader 6 | `food_strength` | forza attrattore |
-| Fader 7 | `predator_strength` | forza predatore |
+| Fader 1 | `alignment_weight` | branco più allineato |
+| Fader 2 | `cohesion_weight` | branco più compatto |
+| Fader 3 | `separation_weight` | pesci più distanti |
+| Fader 4 | `noise_weight` | più caos/turbolenza |
+| Fader 5 | `food_amount` | attrattore virtuale verso il centro |
+| Fader 6 | `predator_amount` | repulsore virtuale dal centro |
+| Fader 7 | `density_fader` | più/meno eventi Markov |
 | Fader 8 | `section_id` | intro/growth/dense/chaos/release/outro |
 
 ---
