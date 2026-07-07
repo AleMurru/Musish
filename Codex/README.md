@@ -14,16 +14,22 @@ pip install -r requirements.txt
 python main.py
 ```
 
-Max deve ascoltare su UDP `7400`.
+Python invia due flussi:
+
+```text
+7400 = OSC standard
+7401 = plain UDP / fallback Max
+```
 
 Patch disponibili:
 
 ```text
-Codex/max/aquarium_receiver.maxpat          # debug/ricezione OSC, richiede oscparse
-Codex/max/aquarium_sound_preview.maxpat     # primo suono OSC, richiede oscparse
+Codex/max/aquarium_osc_symbolic.maxpat         # OSC simbolico: usa /music/note, non /music/midi
+Codex/max/aquarium_receiver.maxpat             # debug/ricezione OSC, richiede oscparse
+Codex/max/aquarium_sound_preview.maxpat        # primo suono OSC, richiede oscparse
 Codex/max/aquarium_netreceive_sound.maxpat     # fallback se oscparse non esiste
-Codex/max/aquarium_netreceive_sound_v2.maxpat  # fallback consigliato: tono di default + debug raw
-Codex/max/aquarium_netreceive_mapped.maxpat    # patch mappata senza unpack: drone + oscillatore density + blip Markov
+Codex/max/aquarium_netreceive_sound_v2.maxpat  # fallback: tono di default + debug raw
+Codex/max/aquarium_netreceive_mapped.maxpat    # plain UDP senza unpack: drone + density + blip Markov
 Codex/max/audio_test.maxpat                    # test audio Max indipendente da Python/OSC
 ```
 
@@ -51,7 +57,7 @@ Messaggi principali:
 /aquarium/descriptors ...
 /aquarium/direct ...
 /music/note ...
-/music/midi ...
+/music/midi ...        # ancora disponibile, ma non usato dalla patch OSC simbolica
 /music/rest ...
 ```
 
