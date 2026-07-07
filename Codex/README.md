@@ -58,6 +58,8 @@ Guida MIDIMAX/MIDIMIX via Max: [`docs/MIDIMAX_CONTROL.md`](docs/MIDIMAX_CONTROL.
 
 Guida MIDIMIX diretto in Python: [`docs/MIDIMIX_DIRECT.md`](docs/MIDIMIX_DIRECT.md).
 
+Guida pratica di test workflow: [`docs/WORKFLOW_TEST_GUIDE.md`](docs/WORKFLOW_TEST_GUIDE.md).
+
 Messaggi principali:
 
 ```text
