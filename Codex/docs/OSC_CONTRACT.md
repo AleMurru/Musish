@@ -1,0 +1,90 @@
+# OSC contract — Acquario Boids → Max
+
+Default target:
+
+```text
+host: 127.0.0.1
+port: 7400
+```
+
+## Descriptor continui
+
+Inviati a ~20 Hz.
+
+```text
+/aquarium/descriptors fish_count mean_speed energy center_x center_y spread density nearest_distance direction_coherence cluster_count
+```
+
+Tutti i valori sono float normalizzati `0..1`.
+
+Sono inviati anche come indirizzi separati:
+
+```text
+/aquarium/descriptor/mean_speed value
+/aquarium/descriptor/density value
+...
+```
+
+## Controlli performativi
+
+```text
+/aquarium/controls density_fader alignment cohesion separation noise section_id
+/aquarium/section section_id section_name
+```
+
+## Mapping diretto per Max
+
+Questo messaggio è pensato per modulazioni immediate, così il pubblico percepisce il link visuale/sonoro senza aspettare la Markov chain.
+
+```text
+/aquarium/direct mean_speed energy center_x center_y density spread density_fader
+```
+
+Uso suggerito in Max:
+
+- `mean_speed` → densità trigger, filtro, tremolo;
+- `energy` → velocity/ampiezza;
+- `center_x` → panning;
+- `center_y` → brightness/ottava;
+- `density` → consonanza/compattezza;
+- `spread` → range o riverbero;
+- `density_fader` → mix tra drone e granularità.
+
+## Eventi musicali simbolici
+
+Evento generico:
+
+```text
+/music/event event_id event_type degree octave duration_beats velocity layer_id chord_degree section_id
+```
+
+Dove:
+
+```text
+event_type: 1 = note, 0 = rest
+layer_id: 0 drone, 1 bass, 2 lead, 3 perc, 4 granular, 5 noise
+section_id: 0 intro, 1 growth, 2 dense, 3 chaos, 4 release, 5 outro
+```
+
+Evento nota, più comodo da routare in Max:
+
+```text
+/music/note event_id degree octave duration_beats velocity layer_id layer_name chord_degree section_id
+```
+
+Evento pausa:
+
+```text
+/music/rest event_id duration_beats section_id
+```
+
+## Nota musicale importante
+
+`degree` e `chord_degree` non sono note MIDI assolute. Sono gradi simbolici. In Max conviene convertirli in MIDI secondo scala/tonalità scelta dal musicista.
+
+Esempio scala minore naturale con root MIDI 57 = A:
+
+```text
+minor_scale = [0, 2, 3, 5, 7, 8, 10]
+midi = root + minor_scale[(degree + chord_degree) % 7] + 12 * octave
+```
