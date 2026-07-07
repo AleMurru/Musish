@@ -7,7 +7,9 @@ I file Max disponibili sono:
 ```text
 Codex/max/aquarium_receiver.maxpat          # solo debug/ricezione OSC, richiede oscparse
 Codex/max/aquarium_sound_preview.maxpat     # primo suono OSC, richiede oscparse
-Codex/max/aquarium_netreceive_sound.maxpat  # fallback senza oscparse, consigliato nel tuo caso
+Codex/max/aquarium_netreceive_sound.maxpat     # fallback senza oscparse
+Codex/max/aquarium_netreceive_sound_v2.maxpat  # fallback consigliato: tono di default + debug raw
+Codex/max/audio_test.maxpat                    # test solo audio, senza Python
 ```
 
 Max **non visualizza il video dei boids**.  
@@ -34,10 +36,10 @@ Max = ricezione OSC + suono
 Se Max dice che `oscparse` non esiste, apri questa patch:
 
 ```text
-Codex/max/aquarium_netreceive_sound.maxpat
+Codex/max/aquarium_netreceive_sound_v2.maxpat
 ```
 
-Questa patch non usa OSC parsing: riceve messaggi testuali Max/FUDI via `netreceive -u 7401`.
+Questa patch non usa OSC parsing: riceve messaggi testuali Max/FUDI via `netreceive -u 7401`. Inoltre contiene un tono di default, quindi se `ezdac~` è acceso dovresti sentire qualcosa anche prima che arrivino dati.
 
 Se invece il tuo Max supporta `oscparse`, puoi aprire:
 

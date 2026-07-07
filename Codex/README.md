@@ -21,7 +21,9 @@ Patch disponibili:
 ```text
 Codex/max/aquarium_receiver.maxpat          # debug/ricezione OSC, richiede oscparse
 Codex/max/aquarium_sound_preview.maxpat     # primo suono OSC, richiede oscparse
-Codex/max/aquarium_netreceive_sound.maxpat  # fallback consigliato se oscparse non esiste
+Codex/max/aquarium_netreceive_sound.maxpat     # fallback se oscparse non esiste
+Codex/max/aquarium_netreceive_sound_v2.maxpat  # fallback consigliato: tono di default + debug raw
+Codex/max/audio_test.maxpat                    # test audio Max indipendente da Python/OSC
 ```
 
 ## Controlli
