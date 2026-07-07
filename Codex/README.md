@@ -51,6 +51,8 @@ Codex/max/audio_test.maxpat                    # test audio Max indipendente da 
 
 Contratto completo: [`docs/OSC_CONTRACT.md`](docs/OSC_CONTRACT.md).
 
+Guida per il musicista: [`docs/MUSICIAN_GUIDE.md`](docs/MUSICIAN_GUIDE.md).
+
 Messaggi principali:
 
 ```text
