@@ -31,6 +31,7 @@ Codex/max/aquarium_netreceive_sound.maxpat     # fallback se oscparse non esiste
 Codex/max/aquarium_netreceive_sound_v2.maxpat  # fallback: tono di default + debug raw
 Codex/max/aquarium_netreceive_mapped.maxpat    # plain UDP senza unpack: drone + density + blip Markov
 Codex/max/audio_test.maxpat                    # test audio Max indipendente da Python/OSC
+Codex/max/midimax_control_template.maxpat      # template Max -> Python per controllare boids con MIDIMAX
 ```
 
 ## Controlli
@@ -52,6 +53,8 @@ Codex/max/audio_test.maxpat                    # test audio Max indipendente da 
 Contratto completo: [`docs/OSC_CONTRACT.md`](docs/OSC_CONTRACT.md).
 
 Guida per il musicista: [`docs/MUSICIAN_GUIDE.md`](docs/MUSICIAN_GUIDE.md).
+
+Guida MIDIMAX: [`docs/MIDIMAX_CONTROL.md`](docs/MIDIMAX_CONTROL.md).
 
 Messaggi principali:
 

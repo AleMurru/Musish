@@ -15,6 +15,15 @@ port: 7401
 Max object: netreceive -u 7401
 ```
 
+Control input Max/MIDIMAX -> Python:
+
+```text
+host: 127.0.0.1
+port: 7500
+format: control parameter value;
+example: control density_fader 0.75;
+```
+
 ## Plain UDP fallback senza oscparse
 
 In parallelo all'OSC, Python invia anche messaggi testuali compatibili con Max `netreceive`:
@@ -57,7 +66,7 @@ Sono inviati anche come indirizzi separati:
 ## Controlli performativi
 
 ```text
-/aquarium/controls density_fader alignment cohesion separation noise section_id
+/aquarium/controls density_fader alignment cohesion separation noise food_strength predator_strength section_id
 /aquarium/section section_id section_name
 ```
 

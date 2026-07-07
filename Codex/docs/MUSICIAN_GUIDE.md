@@ -274,21 +274,16 @@ Finché MIDIMAX non è collegato, i controlli sono da tastiera/mouse nella fines
 
 ---
 
-## 7. Prossimo step: collegare MIDIMAX
+## 7. MIDIMAX: collegamento pronto lato Python
 
-Attualmente il flusso è quasi tutto:
-
-```text
-Python -> Max
-```
-
-Con MIDIMAX vogliamo aggiungere il controllo inverso:
+Ora il flusso può essere bidirezionale:
 
 ```text
-MIDIMAX -> Max -> Python
+Python -> Max      // dati, note, descriptor
+Max -> Python      // controlli da MIDIMAX
 ```
 
-Così i fader controllano i pesci e la generazione.
+Python ascolta già i controlli su UDP `7500`. Il musicista può quindi collegare MIDIMAX in Max e mandare valori a Python.
 
 ### Architettura proposta
 
@@ -317,17 +312,18 @@ Max sound rendering
 | Knob 3 | master FX in Max | riverbero/delay |
 | Knob 4 | brightness/filter in Max | timbro globale |
 
-### Cosa serve implementare lato codice
+### Cosa è già implementato lato codice
 
-1. In Max:
-   - leggere MIDIMAX con `ctlin`;
-   - scalare valori `0..127` in range utili;
-   - inviare messaggi a Python.
+1. In Python:
+   - receiver UDP su porta `7500`;
+   - parsing di messaggi `control parametro valore`;
+   - aggiornamento live di `RuntimeControls`;
+   - tastiera/mouse mantenuti come fallback;
+   - `food_strength` e `predator_strength` controllabili esternamente.
 
-2. In Python:
-   - aggiungere un receiver UDP/OSC per ricevere controlli da Max;
-   - aggiornare `RuntimeControls` in tempo reale;
-   - mantenere tastiera/mouse come fallback.
+2. In Max:
+   - template pronto in `Codex/max/midimax_control_template.maxpat`;
+   - il musicista deve solo collegare i CC reali del MIDIMAX ai messaggi già predisposti.
 
 ### Contratto proposto Max -> Python
 

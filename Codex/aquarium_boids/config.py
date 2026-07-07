@@ -1,6 +1,7 @@
 OSC_HOST = "127.0.0.1"
 OSC_PORT = 7400
 PLAIN_UDP_PORT = 7401  # Max fallback via [netreceive -u 7401], no oscparse needed
+CONTROL_PORT = 7500  # Max/MIDIMAX -> Python controls via [udpsend 127.0.0.1 7500]
 
 WIDTH = 1200
 HEIGHT = 750

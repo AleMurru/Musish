@@ -14,6 +14,7 @@ from aquarium_boids.config import (
     BACKGROUND,
     BOID_COUNT,
     BPM,
+    CONTROL_PORT,
     FPS,
     HEIGHT,
     OSC_HOST,
@@ -22,6 +23,7 @@ from aquarium_boids.config import (
     TEXT,
     WIDTH,
 )
+from aquarium_boids.control_in import ControlReceiver
 from aquarium_boids.controls import RuntimeControls, clamp01
 from aquarium_boids.descriptors import DESCRIPTOR_ORDER, OnePoleSmoother, compute_descriptors
 from aquarium_boids.markov import LAYERS, SECTIONS, SymbolicGenerator
@@ -90,11 +92,12 @@ def handle_key(event: pygame.event.Event, controls: RuntimeControls, flock: list
 
 def draw_hud(surface: pygame.Surface, font: pygame.font.Font, controls: RuntimeControls, descriptors: dict[str, float]) -> None:
     lines = [
-        "Acquario / Boids -> OSC -> Max",
+        "Acquario / Boids -> Max | MIDIMAX/Max control ready",
         f"density_fader UP/DOWN: {controls.density_fader:.2f} | section 1-6: {controls.section_name}",
         f"A/Z align {controls.alignment_weight:.2f} | S/X cohesion {controls.cohesion_weight:.2f} | D/C separation {controls.separation_weight:.2f} | N/M noise {controls.noise_weight:.2f}",
+        f"food_strength {controls.food_strength:.2f} | predator_strength {controls.predator_strength:.2f}",
         "Mouse left = food/attractor | mouse right = predator/repeller | SPACE pause | R reset",
-        f"OSC: {OSC_HOST}:{OSC_PORT}",
+        f"OSC out: {OSC_HOST}:{OSC_PORT} | plain out: 7401 | control in: {CONTROL_PORT}",
         f"mean_speed {descriptors.get('mean_speed', 0):.2f} | density {descriptors.get('density', 0):.2f} | spread {descriptors.get('spread', 0):.2f} | coherence {descriptors.get('direction_coherence', 0):.2f}",
     ]
     y = 10
@@ -116,6 +119,9 @@ def main() -> None:
     smoother = OnePoleSmoother(alpha=0.16)
     osc = OscSender(OSC_HOST, OSC_PORT)
     generator = SymbolicGenerator()
+    control_receiver = ControlReceiver(port=CONTROL_PORT)
+    control_receiver.start()
+    print(f"Listening for Max/MIDIMAX controls on UDP {CONTROL_PORT}")
 
     log_path = BASE_DIR / "logs" / f"descriptors_{int(time.time())}.csv"
     write_log_header(log_path)
@@ -128,6 +134,10 @@ def main() -> None:
     while True:
         dt = clock.tick(FPS) / (1000.0 / FPS)
         now = time.time()
+
+        applied_controls = control_receiver.drain(controls)
+        for command in applied_controls:
+            print(f"[control] {command.name} = {command.value}")
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
