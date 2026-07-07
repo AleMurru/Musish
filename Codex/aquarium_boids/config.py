@@ -3,6 +3,25 @@ OSC_PORT = 7400
 PLAIN_UDP_PORT = 7401  # Max fallback via [netreceive -u 7401], no oscparse needed
 CONTROL_PORT = 7500  # Max/MIDIMAX -> Python controls via [udpsend 127.0.0.1 7500]
 
+# Direct MIDI controller input. Main live workflow: MIDIMIX -> Python -> Max.
+ENABLE_MIDI_INPUT = True
+MIDI_INPUT_NAME = "MIDIMIX"  # substring match; fallback to first available MIDI input
+MIDI_DEBUG = True  # prints incoming CCs, useful for learning the real fader numbers
+
+# Configurable CC mapping: cc_number -> (RuntimeControls field, min_value, max_value, quantize_to_int)
+# NOTE: AKAI MIDIMIX CC numbers can vary by preset. If the mapping does not react,
+# move faders and read printed CC numbers in the terminal, then edit this table.
+MIDI_CC_MAPPING = {
+    19: ("density_fader", 0.0, 1.0, False),
+    20: ("alignment_weight", 0.0, 3.0, False),
+    21: ("cohesion_weight", 0.0, 3.0, False),
+    22: ("separation_weight", 0.0, 4.0, False),
+    23: ("noise_weight", 0.0, 1.5, False),
+    24: ("food_strength", 0.0, 3.0, False),
+    25: ("predator_strength", 0.0, 3.0, False),
+    26: ("section_id", 0.0, 5.0, True),
+}
+
 WIDTH = 1200
 HEIGHT = 750
 FPS = 60

@@ -15,8 +15,12 @@ from aquarium_boids.config import (
     BOID_COUNT,
     BPM,
     CONTROL_PORT,
+    ENABLE_MIDI_INPUT,
     FPS,
     HEIGHT,
+    MIDI_CC_MAPPING,
+    MIDI_DEBUG,
+    MIDI_INPUT_NAME,
     OSC_HOST,
     OSC_PORT,
     SEND_DESCRIPTOR_HZ,
@@ -27,6 +31,7 @@ from aquarium_boids.control_in import ControlReceiver
 from aquarium_boids.controls import RuntimeControls, clamp01
 from aquarium_boids.descriptors import DESCRIPTOR_ORDER, OnePoleSmoother, compute_descriptors
 from aquarium_boids.markov import LAYERS, SECTIONS, SymbolicGenerator
+from aquarium_boids.midi_in import MidiControllerInput
 from aquarium_boids.osc_io import OscSender
 
 
@@ -92,7 +97,7 @@ def handle_key(event: pygame.event.Event, controls: RuntimeControls, flock: list
 
 def draw_hud(surface: pygame.Surface, font: pygame.font.Font, controls: RuntimeControls, descriptors: dict[str, float]) -> None:
     lines = [
-        "Acquario / Boids -> Max | MIDIMAX/Max control ready",
+        "Acquario / Boids -> Max | MIDIMIX direct + Max control ready",
         f"density_fader UP/DOWN: {controls.density_fader:.2f} | section 1-6: {controls.section_name}",
         f"A/Z align {controls.alignment_weight:.2f} | S/X cohesion {controls.cohesion_weight:.2f} | D/C separation {controls.separation_weight:.2f} | N/M noise {controls.noise_weight:.2f}",
         f"food_strength {controls.food_strength:.2f} | predator_strength {controls.predator_strength:.2f}",
@@ -121,7 +126,15 @@ def main() -> None:
     generator = SymbolicGenerator()
     control_receiver = ControlReceiver(port=CONTROL_PORT)
     control_receiver.start()
-    print(f"Listening for Max/MIDIMAX controls on UDP {CONTROL_PORT}")
+    print(f"Listening for Max/MIDIMIX controls on UDP {CONTROL_PORT}")
+
+    midi_input = MidiControllerInput(
+        device_name=MIDI_INPUT_NAME,
+        mapping=MIDI_CC_MAPPING,
+        debug=MIDI_DEBUG,
+    )
+    if ENABLE_MIDI_INPUT:
+        midi_input.start()
 
     log_path = BASE_DIR / "logs" / f"descriptors_{int(time.time())}.csv"
     write_log_header(log_path)
@@ -138,6 +151,10 @@ def main() -> None:
         applied_controls = control_receiver.drain(controls)
         for command in applied_controls:
             print(f"[control] {command.name} = {command.value}")
+
+        midi_controls = midi_input.poll(controls)
+        for command in midi_controls:
+            print(f"[midi-map] cc={command.cc} -> {command.parameter} = {command.scaled_value}")
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
