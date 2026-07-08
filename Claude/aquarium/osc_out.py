@@ -51,3 +51,13 @@ class OSCSender:
         self._send(C.OSC_WORLD["predator"], float(world.predator))
         self._send(C.OSC_WORLD["turbulence"], float(world.turbulence))
         self._send(C.OSC_WORLD["density"], float(world.density))
+
+    def send_music(self, events, chord_change=None):
+        """Invia eventi musicali simbolici (note/rest) + eventuale cambio d'accordo."""
+        if chord_change is not None:
+            self._send(C.OSC_MUSIC_CHORD, int(chord_change))
+        for ev in events:
+            if ev.kind == "note":
+                self._send(C.OSC_MUSIC_NOTE, ev.note_payload())
+            else:
+                self._send(C.OSC_MUSIC_REST, ev.rest_payload())

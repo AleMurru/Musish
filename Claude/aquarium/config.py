@@ -74,3 +74,19 @@ OSC_WORLD = {
     "turbulence": "/aq/world/turbulence",
     "density":    "/aq/world/density",
 }
+# Eventi musicali simbolici (Markov gerarchica) - gradi di scala, NON note assolute
+# Il musicista sceglie scala/tonalita' in Max.
+OSC_MUSIC_NOTE = "/aq/music/note"   # args: int id, int degree(0..6), int octave, float dur_beats, int velocity(0..127), int chord_root(0..6)
+OSC_MUSIC_REST = "/aq/music/rest"   # args: int id, float dur_beats
+OSC_MUSIC_CHORD = "/aq/music/chord"  # args: int chord_root(0..6)  (inviato quando cambia)
+
+# --- Generatore musicale ------------------------------------------------------
+BPM = 110
+DURATIONS = {                     # nome -> durata in beat
+    "sixteenth": 0.25,
+    "eighth":    0.5,
+    "quarter":   1.0,
+    "half":      2.0,
+    "rest":      1.0,
+}
+CHORD_EVERY_EVENTS = 8            # ogni quanti eventi valutare il cambio d'accordo

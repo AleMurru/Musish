@@ -23,6 +23,7 @@ from aquarium import config as C
 from aquarium.boids import Flock, World
 from aquarium.descriptors import DescriptorExtractor
 from aquarium.osc_out import OSCSender
+from aquarium.markov import HierarchicalGenerator
 
 BG = (12, 16, 22)
 TRAIL_FADE = (12, 16, 22, 34)
@@ -59,8 +60,9 @@ def draw_fish(surf, pos, vel, size):
     pygame.draw.polygon(surf, speed_color(min(sp / C.MAX_SPEED, 1.0)), [tip, a, b])
 
 
-def draw_hud(screen, font, d, world, fps, osc_on):
+def draw_hud(screen, font, d, world, fps, osc_on, note_count=0, cur_chord=0, music_on=True):
     x0, y0 = 16, 14
+    CHORDS = ["i", "II", "III", "iv", "V", "VI", "VII"]
     labels = ["mean_speed", "energy", "density", "spread",
               "coherence", "nearest", "center_x", "center_y"]
     screen.blit(font.render("DESCRIPTORS (OSC ->:%d)" % C.OSC_PORT, True, (150, 200, 230)), (x0, y0))
@@ -79,7 +81,10 @@ def draw_hud(screen, font, d, world, fps, osc_on):
         pygame.draw.rect(screen, (220, 150, 90), (x0, y + 5, int(160 * val), 8))
         screen.blit(font.render(f"{k:11s} {val:0.2f}", True, (210, 200, 190)), (x0 + 172, y))
         y += 20
-    info = f"{fps:4.0f} fps  OSC {'ON' if osc_on else 'OFF'}  [H]ud [T]rails [O]sc  SX=cibo DX=predatore"
+    y += 8
+    mus = f"MUSIC {'ON' if music_on else 'OFF'}  accordo: {CHORDS[cur_chord % 7]}  note inviate: {note_count}"
+    screen.blit(font.render(mus, True, (170, 160, 230)), (x0, y))
+    info = f"{fps:4.0f} fps  OSC {'ON' if osc_on else 'OFF'}  [H]ud [T]rails [O]sc [M]usic  SX=cibo DX=predatore"
     screen.blit(font.render(info, True, (120, 130, 140)), (x0, C.HEIGHT - 24))
 
 
@@ -99,9 +104,12 @@ def main():
     world = World()
     desc = DescriptorExtractor()
     osc = OSCSender(enabled=True, verbose=False)
+    gen = HierarchicalGenerator(seed=7)
 
     flashes: list[EventFlash] = []
-    show_trails = show_hud = osc_on = True
+    show_trails = show_hud = osc_on = music_on = True
+    note_count = 0
+    cur_chord = 0
     paused = False
     desc_interval = 1.0 / C.DESC_SEND_HZ
     desc_acc = 0.0
@@ -127,6 +135,8 @@ def main():
                     show_hud = not show_hud
                 elif e.key == pygame.K_o:
                     osc_on = not osc_on
+                elif e.key == pygame.K_m:
+                    music_on = not music_on
                 elif e.key == pygame.K_BACKSPACE:
                     flock = Flock(seed=np.random.randint(1_000_000))
 
@@ -171,6 +181,12 @@ def main():
                 if desc_acc >= desc_interval and d:
                     osc.send_descriptors(d)
                     desc_acc = 0.0
+            if music_on and d:
+                music_events, chord_change = gen.tick(dt, d, world)
+                note_count += sum(1 for m in music_events if m.kind == "note")
+                cur_chord = gen.chord_root
+                if osc_on:
+                    osc.send_music(music_events, chord_change)
 
         if show_trails:
             trails.blit(fade, (0, 0))
@@ -197,7 +213,8 @@ def main():
         flashes = [fl for fl in flashes if fl.step(dt)]
 
         if show_hud:
-            draw_hud(screen, font, d, world, clock.get_fps(), osc_on)
+            draw_hud(screen, font, d, world, clock.get_fps(), osc_on,
+                     note_count, cur_chord, music_on)
 
         pygame.display.flip()
         frame += 1
