@@ -8,10 +8,15 @@ ENABLE_MIDI_INPUT = True
 MIDI_INPUT_NAME = "MIDIMIX"  # substring match; fallback to first available MIDI input
 MIDI_DEBUG = True  # prints incoming CCs, useful for learning the real fader numbers
 
+# Demo v0 mode: boids as control source for Max sample/granular performance.
+# Markov can be re-enabled later, after the sample-based demo is stable.
+DEMO_MODE = True
+ENABLE_MARKOV = False
+
 # Configurable CC mapping: cc_number -> (RuntimeControls field, min_value, max_value, quantize_to_int)
 # NOTE: AKAI MIDIMIX CC numbers can vary by preset. If the mapping does not react,
-# move faders and read printed CC numbers in the terminal, then edit this table.
-MIDI_CC_MAPPING = {
+# move faders and read printed CC numbers in the terminal, then edit these tables.
+MIDI_CC_MAPPING_CLASSIC = {
     # Primary ecosystem controls: these change boids first, then sound follows descriptors.
     19: ("alignment_weight", 0.0, 3.0, False),
     20: ("cohesion_weight", 0.0, 3.0, False),
@@ -23,6 +28,22 @@ MIDI_CC_MAPPING = {
     25: ("density_fader", 0.0, 1.0, False),
     26: ("section_id", 0.0, 5.0, True),
 }
+
+MIDI_CC_MAPPING_DEMO = {
+    # Demo macro: 0 = branco ordinato/stessa direzione, 1 = dispersione caotica.
+    19: ("alignment_chaos", 0.0, 1.0, False),
+    # Performance controls for Max sample/granular patch.
+    20: ("grain_density", 0.0, 1.0, False),
+    21: ("noise_distortion", 0.0, 1.0, False),
+    # Ecosystem controls kept for visible/sonic shaping.
+    22: ("cohesion_weight", 0.0, 3.0, False),
+    23: ("separation_weight", 0.0, 4.0, False),
+    24: ("food_amount", 0.0, 3.0, False),
+    25: ("predator_amount", 0.0, 3.0, False),
+    26: ("scene_id", 0.0, 5.0, True),
+}
+
+MIDI_CC_MAPPING = MIDI_CC_MAPPING_DEMO if DEMO_MODE else MIDI_CC_MAPPING_CLASSIC
 
 WIDTH = 1200
 HEIGHT = 750

@@ -37,11 +37,12 @@ Codex/max/midimax_control_template.maxpat      # fallback Max -> Python per cont
 ## Controlli
 
 - `UP/DOWN`: aumenta/diminuisce `density_fader`
-- `1..6`: sezione musicale `intro/growth/dense/chaos/release/outro`
+- `1..6`: sezione/scena `intro/growth/dense/chaos/release/outro`
 - `A/Z`: alignment + / -
 - `S/X`: cohesion + / -
 - `D/C`: separation + / -
 - `N/M`: noise + / -
+- DEMO_MODE/MIDIMIX: F1 `alignment_chaos`, F2 `grain_density`, F3 `noise_distortion`, F4 cohesion, F5 separation, F6 food, F7 predator, F8 scene
 - mouse sinistro: food/attractor
 - mouse destro: predator/repeller
 - `SPACE`: pausa

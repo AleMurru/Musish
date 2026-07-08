@@ -56,18 +56,18 @@ La mappatura è definita in:
 Codex/aquarium_boids/config.py
 ```
 
-Tabella:
+Con `DEMO_MODE = True`, la mappatura attiva è:
 
 ```python
-MIDI_CC_MAPPING = {
-    19: ("alignment_weight", 0.0, 3.0, False),
-    20: ("cohesion_weight", 0.0, 3.0, False),
-    21: ("separation_weight", 0.0, 4.0, False),
-    22: ("noise_weight", 0.0, 1.5, False),
-    23: ("food_amount", 0.0, 3.0, False),
-    24: ("predator_amount", 0.0, 3.0, False),
-    25: ("density_fader", 0.0, 1.0, False),
-    26: ("section_id", 0.0, 5.0, True),
+MIDI_CC_MAPPING_DEMO = {
+    19: ("alignment_chaos", 0.0, 1.0, False),
+    20: ("grain_density", 0.0, 1.0, False),
+    21: ("noise_distortion", 0.0, 1.0, False),
+    22: ("cohesion_weight", 0.0, 3.0, False),
+    23: ("separation_weight", 0.0, 4.0, False),
+    24: ("food_amount", 0.0, 3.0, False),
+    25: ("predator_amount", 0.0, 3.0, False),
+    26: ("scene_id", 0.0, 5.0, True),
 }
 ```
 
@@ -75,14 +75,16 @@ Significato:
 
 | CC | Parametro | Range | Effetto |
 |---:|---|---:|---|
-| 19 | `alignment_weight` | 0..3 | allineamento boids |
-| 20 | `cohesion_weight` | 0..3 | compattezza branco |
-| 21 | `separation_weight` | 0..4 | dispersione |
-| 22 | `noise_weight` | 0..1.5 | turbolenza |
-| 23 | `food_amount` | 0..3 | attrattore virtuale verso il centro |
-| 24 | `predator_amount` | 0..3 | repulsore virtuale dal centro |
-| 25 | `density_fader` | 0..1 | quantità eventi Markov |
-| 26 | `section_id` | 0..5 int | sezione musicale |
+| 19 | `alignment_chaos` | 0..1 | basso = branco ordinato/stessa direzione, alto = dispersione caotica |
+| 20 | `grain_density` | 0..1 | densità grani/trigger in Max |
+| 21 | `noise_distortion` | 0..1 | distorsione/noise in Max + più turbolenza nei boids |
+| 22 | `cohesion_weight` | 0..3 | compattezza branco |
+| 23 | `separation_weight` | 0..4 | dispersione |
+| 24 | `food_amount` | 0..3 | attrattore virtuale verso il centro |
+| 25 | `predator_amount` | 0..3 | repulsore virtuale dal centro |
+| 26 | `scene_id` | 0..5 int | scena/banco sample/preset Max |
+
+La vecchia mappatura boids/Markov resta disponibile in `MIDI_CC_MAPPING_CLASSIC` impostando `DEMO_MODE = False`.
 
 ---
 

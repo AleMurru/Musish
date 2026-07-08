@@ -15,6 +15,7 @@ from aquarium_boids.config import (
     BOID_COUNT,
     BPM,
     CONTROL_PORT,
+    ENABLE_MARKOV,
     ENABLE_MIDI_INPUT,
     FPS,
     HEIGHT,
@@ -100,6 +101,7 @@ def draw_hud(surface: pygame.Surface, font: pygame.font.Font, controls: RuntimeC
         "Acquario / Boids -> Max | MIDIMIX direct + Max control ready",
         f"density_fader UP/DOWN: {controls.density_fader:.2f} | section 1-6: {controls.section_name}",
         f"A/Z align {controls.alignment_weight:.2f} | S/X cohesion {controls.cohesion_weight:.2f} | D/C separation {controls.separation_weight:.2f} | N/M noise {controls.noise_weight:.2f}",
+        f"demo: align_chaos {controls.alignment_chaos:.2f} | grain_density {controls.grain_density:.2f} | noise_distortion {controls.noise_distortion:.2f}",
         f"food_amount {controls.food_amount:.2f} | predator_amount {controls.predator_amount:.2f} | mouse food/pred {controls.food_strength:.2f}/{controls.predator_strength:.2f}",
         "Mouse left = food/attractor | mouse right = predator/repeller | SPACE pause | R reset",
         f"OSC out: {OSC_HOST}:{OSC_PORT} | plain out: 7401 | control in: {CONTROL_PORT}",
@@ -184,6 +186,7 @@ def main() -> None:
             osc.send_descriptors(descriptors)
             osc.send_controls(controls)
             osc.send_direct_mapping(descriptors, controls)
+            osc.send_performance(controls)
             last_descriptor_send = now
 
         if now - last_log >= 0.25:
@@ -191,7 +194,7 @@ def main() -> None:
             last_log = now
 
         # Event rate: collective/slow at low density, granular/fast at high density and high fish speed.
-        if now >= next_event_time:
+        if ENABLE_MARKOV and now >= next_event_time:
             burst = 1 + int(controls.density_fader * 3.2)
             for _ in range(burst):
                 event = generator.generate(descriptors, controls)

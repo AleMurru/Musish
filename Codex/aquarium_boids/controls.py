@@ -16,6 +16,9 @@ class RuntimeControls:
     predator_strength: float = 1.0  # mouse-right repeller multiplier
     food_amount: float = 0.0  # virtual center attractor controlled by MIDIMIX
     predator_amount: float = 0.0  # virtual center repeller controlled by MIDIMIX
+    alignment_chaos: float = 0.5  # 0=ordered same direction, 1=dispersed chaotic
+    grain_density: float = 0.25  # performance control for Max granular/sample density
+    noise_distortion: float = 0.0  # performance control for Max distortion/noise
     section_id: int = 0
     paused: bool = False
 

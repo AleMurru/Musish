@@ -108,6 +108,13 @@ def apply_control(command: ControlCommand, controls: RuntimeControls) -> None:
 
     if name in {"density", "density_fader", "granularity"}:
         controls.density_fader = clamp01(x)
+    elif name in {"grain_density", "sample_density"}:
+        controls.grain_density = clamp01(x)
+    elif name in {"alignment_chaos", "order_chaos", "schooling_chaos"}:
+        controls.alignment_chaos = clamp01(x)
+    elif name in {"noise_distortion", "distortion", "distortion_amount"}:
+        controls.noise_distortion = clamp01(x)
+        controls.noise_weight = 0.05 + controls.noise_distortion * 1.45
     elif name in {"alignment", "alignment_weight", "align"}:
         controls.alignment_weight = max(0.0, min(3.0, x))
     elif name in {"cohesion", "cohesion_weight"}:
@@ -124,7 +131,7 @@ def apply_control(command: ControlCommand, controls: RuntimeControls) -> None:
         controls.predator_amount = max(0.0, min(3.0, x))
     elif name in {"predator_strength", "mouse_predator_strength"}:
         controls.predator_strength = max(0.0, min(3.0, x))
-    elif name in {"section", "section_id"}:
+    elif name in {"section", "section_id", "scene", "scene_id"}:
         controls.section_id = _as_section(value)
     elif name == "paused":
         controls.paused = x >= 0.5

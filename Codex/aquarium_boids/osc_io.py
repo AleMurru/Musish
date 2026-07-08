@@ -59,6 +59,16 @@ class OscSender:
         self.client.send_message("/aquarium/direct", payload)
         self._send_plain("direct", payload)
 
+    def send_performance(self, controls: RuntimeControls) -> None:
+        payload = [
+            controls.alignment_chaos,
+            controls.grain_density,
+            controls.noise_distortion,
+            float(controls.section_id),
+        ]
+        self.client.send_message("/aquarium/performance", payload)
+        self._send_plain("performance", payload)
+
     def send_music_event(self, event: MusicEvent) -> None:
         self.client.send_message("/music/event", event.osc_payload())
         self._send_plain("event", event.osc_payload())

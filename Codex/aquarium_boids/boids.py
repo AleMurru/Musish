@@ -117,13 +117,22 @@ class Boid:
         attractor: Vector2 | None = None,
         repeller: Vector2 | None = None,
     ) -> None:
-        alignment = self.align(boids) * controls.alignment_weight
-        cohesion = self.cohesion(boids) * controls.cohesion_weight
-        separation = self.separation(boids) * controls.separation_weight
-        noise = Vector2(random.uniform(-1, 1), random.uniform(-1, 1)) * self.max_force * controls.noise_weight
-        walls = self.avoid_walls(width, height)
+        # Demo macro: alignment_chaos is neutral around 0.5.
+        # 0.0 pushes the whole school toward one common direction;
+        # 1.0 reduces alignment/cohesion and adds dispersion/noise.
+        chaos = max(0.0, min(1.0, controls.alignment_chaos))
+        ordered_push = max(0.0, 0.5 - chaos) * 2.0
 
-        self.acceleration = alignment + cohesion + separation + noise + walls
+        alignment = self.align(boids) * controls.alignment_weight * (1.65 - 1.30 * chaos)
+        cohesion = self.cohesion(boids) * controls.cohesion_weight * (1.25 - 0.50 * chaos)
+        separation = self.separation(boids) * controls.separation_weight * (0.55 + 0.90 * chaos)
+        noise = Vector2(random.uniform(-1, 1), random.uniform(-1, 1)) * self.max_force * (
+            controls.noise_weight + 1.10 * chaos
+        )
+        walls = self.avoid_walls(width, height)
+        schooling = self._steer_towards(Vector2(1.0, -0.08)) * (1.35 * ordered_push)
+
+        self.acceleration = alignment + cohesion + separation + noise + walls + schooling
 
         # Performance gestures: left mouse = food/attractor, right mouse = predator/repeller.
         if attractor is not None:

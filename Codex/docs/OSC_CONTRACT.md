@@ -30,6 +30,7 @@ In parallelo all'OSC, Python invia anche messaggi testuali compatibili con Max `
 
 ```text
 direct mean_speed energy center_x center_y density spread density_fader
+performance alignment_chaos grain_density noise_distortion scene_id
 midi event_id midi_note velocity duration_ms layer_id section_id
 note event_id degree octave duration_beats velocity layer_id layer_name chord_degree section_id
 rest event_id duration_beats section_id
@@ -87,6 +88,29 @@ Uso suggerito in Max:
 - `density` → consonanza/compattezza;
 - `spread` → range o riverbero;
 - `density_fader` → mix tra drone e granularità.
+
+## Controlli performance demo v0
+
+Messaggio dedicato alla demo sample/granular in Max:
+
+```text
+/aquarium/performance alignment_chaos grain_density noise_distortion scene_id
+```
+
+Fallback plain UDP:
+
+```text
+performance alignment_chaos grain_density noise_distortion scene_id
+```
+
+Campi:
+
+| Campo | Range | Uso |
+|---|---:|---|
+| `alignment_chaos` | `0..1` | `0` = branco ordinato/stessa direzione, `1` = dispersione caotica |
+| `grain_density` | `0..1` | densità di grani/trigger/sample in Max |
+| `noise_distortion` | `0..1` | quantità di noise/distorsione; in Python aumenta anche il caos del movimento |
+| `scene_id` | `0..5` | scena, banco sample o preset Max |
 
 ## Eventi musicali simbolici
 

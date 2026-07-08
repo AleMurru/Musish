@@ -139,6 +139,13 @@ class MidiControllerInput:
 def apply_parameter(controls: RuntimeControls, parameter: str, value: float | int) -> None:
     if parameter == "density_fader":
         controls.density_fader = clamp01(float(value))
+    elif parameter == "grain_density":
+        controls.grain_density = clamp01(float(value))
+    elif parameter == "alignment_chaos":
+        controls.alignment_chaos = clamp01(float(value))
+    elif parameter == "noise_distortion":
+        controls.noise_distortion = clamp01(float(value))
+        controls.noise_weight = 0.05 + controls.noise_distortion * 1.45
     elif parameter == "alignment_weight":
         controls.alignment_weight = max(0.0, min(3.0, float(value)))
     elif parameter == "cohesion_weight":
@@ -155,5 +162,5 @@ def apply_parameter(controls: RuntimeControls, parameter: str, value: float | in
         controls.food_amount = max(0.0, min(3.0, float(value)))
     elif parameter == "predator_amount":
         controls.predator_amount = max(0.0, min(3.0, float(value)))
-    elif parameter == "section_id":
+    elif parameter in {"section_id", "scene_id"}:
         controls.section_id = max(0, min(5, int(value)))
