@@ -33,6 +33,146 @@ Max riceve:
 
 ---
 
+## 1.1 Uso ottimale della Markov v2
+
+La Markov v2 non va pensata come un generatore casuale di note, ma come un **direttore d'orchestra probabilistico**.
+
+Il suo compito non è produrre direttamente un bel timbro. Il suo compito è decidere:
+
+```text
+quando succede un evento
+che tipo di evento succede
+quanto è forte
+quanto dura
+quale voce musicale lo suona
+quanto è ordinato o caotico
+quanto è denso o rarefatto
+```
+
+Il timbro finale invece resta responsabilità di Max e del musicista.
+
+Quindi la separazione ideale è:
+
+```text
+Python / Markov v2 = decisione musicale
+Max / musicista    = rendering sonoro
+```
+
+In pratica:
+
+```text
+Pesci + MIDIMIX → influenzano la Markov
+Markov          → manda eventi simbolici
+Max             → trasforma gli eventi in sample, synth, effetti e mix
+```
+
+---
+
+## 1.2 Come i pesci influenzano la Markov
+
+I pesci producono descriptor continui:
+
+```text
+mean_speed
+energy
+density
+spread
+direction_coherence
+center_x
+center_y
+```
+
+Questi descriptor non devono per forza diventare suono diretto. Possono modificare il comportamento della Markov.
+
+Esempi:
+
+| Descriptor | Influenza musicale possibile |
+|---|---|
+| `mean_speed` | più attività ritmica, più probabilità di note |
+| `energy` | velocity più alta, eventi più forti |
+| `density` | note più consonanti, armonia più stabile |
+| `spread` | registro melodico più ampio, più spazio |
+| `direction_coherence` alta | pattern più regolari |
+| `direction_coherence` bassa | pattern più frammentati |
+| `center_x` | pan o scelta di zona stereo in Max |
+| `center_y` | filtro, brightness, registro |
+
+Quindi i pesci non sono solo una sorgente di modulazione audio: diventano una sorgente di **controllo compositivo**.
+
+---
+
+## 1.3 Come i fader MIDIMIX influenzano la Markov
+
+I fader sono macro-controlli performativi.
+
+### `alignment_chaos`
+
+```text
+basso → musica più ordinata/stabile
+alto  → più caos, offbeat, salti melodici, hit e glitch
+```
+
+### `grain_density`
+
+```text
+basso → pochi eventi, più spazio
+alto  → più note, più hit, più grani, meno silenzio
+```
+
+### `noise_distortion`
+
+```text
+basso → meno noise, velocity più morbide
+alto  → più hit noise/glitch, velocity più aggressive
+```
+
+Altri fader influenzano i boids e quindi agiscono indirettamente sulla Markov:
+
+```text
+cohesion   → branco compatto → armonia più stabile
+separation → branco disperso → registro più largo / più frammentazione
+food       → accumulo / attrazione / tensione
+predator   → fuga / esplosione / accenti
+scene_id   → scena, banco sample, preset Max
+```
+
+---
+
+## 1.4 Ruolo del musicista e dei sample in Max
+
+La Markov v2 manda eventi simbolici, per esempio:
+
+```text
+note bass 45 90 500
+note lead 69 84 250
+chord 57 60 64
+hit glitch 3 100 120
+```
+
+Questi messaggi non obbligano a usare suoni sintetici basilari. Anzi: il caso d'uso migliore è che il musicista li usi per controllare i suoi sample e strumenti in Max.
+
+Esempi di mapping in Max:
+
+| Messaggio | Possibile rendering Max |
+|---|---|
+| `note bass` | sample basso pitchato, synth sub, linea grave |
+| `note lead` | sample melodico, synth lead, frammento pitchato |
+| `chord` | pad, texture armonica, drone intonato |
+| `hit grain` | micro-sample, granuli, frammenti brevi |
+| `hit glitch` | sample glitch, click, tagli ritmici |
+| `hit noise` | rumori, distorsione, impatti sporchi |
+
+Quindi:
+
+```text
+Python decide cosa deve succedere musicalmente.
+Max decide come quella cosa deve suonare.
+```
+
+Questa è la forma più forte del progetto, perché conserva il controllo artistico del musicista e usa la Markov come struttura generativa.
+
+---
+
 ## 2. File coinvolti
 
 ### `aquarium_boids/config.py`
