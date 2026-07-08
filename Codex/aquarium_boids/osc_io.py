@@ -8,6 +8,7 @@ from .config import BPM, PLAIN_UDP_PORT, ROOT_MIDI, SCALE_INTERVALS
 from .controls import RuntimeControls
 from .descriptors import DESCRIPTOR_ORDER
 from .markov import LAYERS, MusicEvent
+from .markov_v2 import ChordEvent, ClockEvent, HitEvent, MarkovV2Event, NoteEventV2
 
 
 def event_to_midi(event: MusicEvent) -> int:
@@ -68,6 +69,35 @@ class OscSender:
         ]
         self.client.send_message("/aquarium/performance", payload)
         self._send_plain("performance", payload)
+
+    def send_markov_v2_event(self, event: MarkovV2Event) -> None:
+        if isinstance(event, ClockEvent):
+            payload = [event.kind, event.index, event.step, event.step_in_bar, event.beat_in_bar, event.bar, event.bpm]
+            self.client.send_message("/markov/v2/clock", payload)
+            self._send_plain("clock", payload)
+        elif isinstance(event, ChordEvent):
+            payload = [event.root, event.third, event.fifth, event.chord_degree, event.scene_id, event.bar]
+            self.client.send_message("/markov/v2/chord", payload)
+            self._send_plain("chord", payload)
+        elif isinstance(event, NoteEventV2):
+            payload = [
+                event.voice,
+                event.midi_note,
+                event.velocity,
+                event.duration_ms,
+                event.degree,
+                event.octave,
+                event.layer_id,
+                event.scene_id,
+                event.chord_degree,
+                event.event_id,
+            ]
+            self.client.send_message("/markov/v2/note", payload)
+            self._send_plain("note", payload)
+        elif isinstance(event, HitEvent):
+            payload = [event.voice, event.sample_id, event.velocity, event.duration_ms, event.scene_id, event.event_id]
+            self.client.send_message("/markov/v2/hit", payload)
+            self._send_plain("hit", payload)
 
     def send_music_event(self, event: MusicEvent) -> None:
         self.client.send_message("/music/event", event.osc_payload())

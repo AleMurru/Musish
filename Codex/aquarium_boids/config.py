@@ -9,9 +9,14 @@ MIDI_INPUT_NAME = "MIDIMIX"  # substring match; fallback to first available MIDI
 MIDI_DEBUG = True  # prints incoming CCs, useful for learning the real fader numbers
 
 # Demo v0 mode: boids as control source for Max sample/granular performance.
-# Markov can be re-enabled later, after the sample-based demo is stable.
 DEMO_MODE = True
+
+# Markov v1 is the older free-running generator. Keep it off for the new demo workflow.
 ENABLE_MARKOV = False
+
+# Markov v2 is quantized to a 16th-note clock and emits symbolic messages for Max.
+ENABLE_MARKOV_V2 = True
+MARKOV_V2_DEBUG = True
 
 # Configurable CC mapping: cc_number -> (RuntimeControls field, min_value, max_value, quantize_to_int)
 # NOTE: AKAI MIDIMIX CC numbers can vary by preset. If the mapping does not react,

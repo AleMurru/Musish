@@ -16,9 +16,11 @@ from aquarium_boids.config import (
     BPM,
     CONTROL_PORT,
     ENABLE_MARKOV,
+    ENABLE_MARKOV_V2,
     ENABLE_MIDI_INPUT,
     FPS,
     HEIGHT,
+    MARKOV_V2_DEBUG,
     MIDI_CC_MAPPING,
     MIDI_DEBUG,
     MIDI_INPUT_NAME,
@@ -32,6 +34,7 @@ from aquarium_boids.control_in import ControlReceiver
 from aquarium_boids.controls import RuntimeControls, clamp01
 from aquarium_boids.descriptors import DESCRIPTOR_ORDER, OnePoleSmoother, compute_descriptors
 from aquarium_boids.markov import LAYERS, SECTIONS, SymbolicGenerator
+from aquarium_boids.markov_v2 import BeatClock, ChordEvent, HitEvent, MarkovV2Generator, NoteEventV2
 from aquarium_boids.midi_in import MidiControllerInput
 from aquarium_boids.osc_io import OscSender
 
@@ -98,7 +101,7 @@ def handle_key(event: pygame.event.Event, controls: RuntimeControls, flock: list
 
 def draw_hud(surface: pygame.Surface, font: pygame.font.Font, controls: RuntimeControls, descriptors: dict[str, float]) -> None:
     lines = [
-        "Acquario / Boids -> Max | MIDIMIX direct + Max control ready",
+        "Acquario / Boids -> Max | DEMO + Markov v2 symbolic output",
         f"density_fader UP/DOWN: {controls.density_fader:.2f} | section 1-6: {controls.section_name}",
         f"A/Z align {controls.alignment_weight:.2f} | S/X cohesion {controls.cohesion_weight:.2f} | D/C separation {controls.separation_weight:.2f} | N/M noise {controls.noise_weight:.2f}",
         f"demo: align_chaos {controls.alignment_chaos:.2f} | grain_density {controls.grain_density:.2f} | noise_distortion {controls.noise_distortion:.2f}",
@@ -126,6 +129,8 @@ def main() -> None:
     smoother = OnePoleSmoother(alpha=0.16)
     osc = OscSender(OSC_HOST, OSC_PORT)
     generator = SymbolicGenerator()
+    markov_v2_clock = BeatClock(BPM)
+    markov_v2 = MarkovV2Generator()
     control_receiver = ControlReceiver(port=CONTROL_PORT)
     control_receiver.start()
     print(f"Listening for Max/MIDIMIX controls on UDP {CONTROL_PORT}")
@@ -147,7 +152,9 @@ def main() -> None:
     descriptors: dict[str, float] = {}
 
     while True:
-        dt = clock.tick(FPS) / (1000.0 / FPS)
+        elapsed_ms = clock.tick(FPS)
+        dt = elapsed_ms / (1000.0 / FPS)
+        dt_s = elapsed_ms / 1000.0
         now = time.time()
 
         applied_controls = control_receiver.drain(controls)
@@ -193,7 +200,30 @@ def main() -> None:
             append_log(log_path, now, descriptors, controls)
             last_log = now
 
-        # Event rate: collective/slow at low density, granular/fast at high density and high fish speed.
+        if ENABLE_MARKOV_V2 and not controls.paused:
+            for step in markov_v2_clock.tick(dt_s):
+                for music_event in markov_v2.generate_step(step, descriptors, controls):
+                    osc.send_markov_v2_event(music_event)
+                    if isinstance(music_event, (NoteEventV2, HitEvent)) and flock:
+                        max(flock, key=lambda boid: boid.velocity.length_squared()).flash = 1.0
+                    if MARKOV_V2_DEBUG:
+                        if isinstance(music_event, ChordEvent):
+                            print(
+                                f"chord root={music_event.root} third={music_event.third} fifth={music_event.fifth} "
+                                f"degree={music_event.chord_degree} scene={music_event.scene_id} bar={music_event.bar}"
+                            )
+                        elif isinstance(music_event, NoteEventV2):
+                            print(
+                                f"note {music_event.voice} midi={music_event.midi_note} vel={music_event.velocity} "
+                                f"dur={music_event.duration_ms} degree={music_event.degree} scene={music_event.scene_id}"
+                            )
+                        elif isinstance(music_event, HitEvent):
+                            print(
+                                f"hit {music_event.voice} sample={music_event.sample_id} vel={music_event.velocity} "
+                                f"dur={music_event.duration_ms} scene={music_event.scene_id}"
+                            )
+
+        # Legacy Markov v1: collective/slow at low density, granular/fast at high density and high fish speed.
         if ENABLE_MARKOV and now >= next_event_time:
             burst = 1 + int(controls.density_fader * 3.2)
             for _ in range(burst):

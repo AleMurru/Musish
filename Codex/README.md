@@ -21,6 +21,8 @@ Python invia due flussi:
 7401 = plain UDP / fallback Max
 ```
 
+Nel branch demo è attiva anche la Markov v2 quantizzata: Python manda `clock`, `chord`, `note`, `hit` a Max, oltre a `direct` e `performance`.
+
 Patch disponibili:
 
 ```text
@@ -68,7 +70,11 @@ Messaggi principali:
 /aquarium/direct ...
 /music/note ...
 /music/midi ...        # ancora disponibile, ma non usato dalla patch OSC simbolica
-/music/rest ...
+/music/rest ...        # legacy v1
+/markov/v2/clock ...  # Markov v2
+/markov/v2/chord ...
+/markov/v2/note ...
+/markov/v2/hit ...
 ```
 
 ## Riferimento boids usato come ispirazione

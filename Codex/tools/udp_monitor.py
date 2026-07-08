@@ -39,6 +39,10 @@ DESCRIPTOR_NAMES = [
     "cluster_count",
 ]
 PERFORMANCE_NAMES = ["alignment_chaos", "grain_density", "noise_distortion", "scene_id"]
+CLOCK_NAMES = ["kind", "index", "step", "step_in_bar", "beat_in_bar", "bar", "bpm"]
+CHORD_NAMES = ["root", "third", "fifth", "chord_degree", "scene_id", "bar"]
+NOTE_NAMES = ["voice", "midi_note", "velocity", "duration_ms", "degree", "octave", "layer_id", "scene_id", "chord_degree", "event_id"]
+HIT_NAMES = ["voice", "sample_id", "velocity", "duration_ms", "scene_id", "event_id"]
 
 
 def parse_packet(text: str) -> list[list[str]]:
@@ -97,8 +101,17 @@ def main() -> None:
                     if now - last_descriptor_print >= 1.0:
                         print("descriptors " + format_named(DESCRIPTOR_NAMES, values))
                         last_descriptor_print = now
-                elif label in {"midi", "note", "rest", "event"}:
-                    # Markov is disabled in demo mode by default.
+                elif label == "clock":
+                    # Step clock is frequent: print only beat/bar messages.
+                    if values and values[0] in {"beat", "bar"}:
+                        print("clock      " + format_named(CLOCK_NAMES, values))
+                elif label == "chord":
+                    print("chord      " + format_named(CHORD_NAMES, values))
+                elif label == "note":
+                    print("note       " + format_named(NOTE_NAMES, values))
+                elif label == "hit":
+                    print("hit        " + format_named(HIT_NAMES, values))
+                elif label in {"midi", "rest", "event"}:
                     print(f"{label:<11} {' '.join(values)}")
                 else:
                     # Useful for controls/section/debug.

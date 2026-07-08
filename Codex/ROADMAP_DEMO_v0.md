@@ -18,13 +18,10 @@ sample / granulazione / effetti del musicista
 suono sensato
 ```
 
-In questa fase mettiamo temporaneamente in secondo piano:
+Nota di evoluzione: la prima demo sample/descriptor è stata stabilizzata; ora reintroduciamo una **Markov v2** quantizzata come livello simbolico aggiuntivo verso Max. Restano invece fuori dalla demo v0:
 
 ```text
-Markov Chain
 AI generativa
-melodie simboliche
-accordi automatici
 MIDI multi-canale verso Ableton
 ```
 
