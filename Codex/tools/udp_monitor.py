@@ -26,6 +26,18 @@ HOST = "127.0.0.1"
 PORT = 7401
 
 DIRECT_NAMES = ["mean_speed", "energy", "center_x", "center_y", "density", "spread", "density_fader"]
+DESCRIPTOR_NAMES = [
+    "fish_count",
+    "mean_speed",
+    "energy",
+    "center_x",
+    "center_y",
+    "spread",
+    "density",
+    "nearest_distance",
+    "direction_coherence",
+    "cluster_count",
+]
 PERFORMANCE_NAMES = ["alignment_chaos", "grain_density", "noise_distortion", "scene_id"]
 
 
@@ -57,6 +69,7 @@ def main() -> None:
     print("Close Max [netreceive -u 7401] while using this monitor. Ctrl+C to stop.\n")
 
     last_seen: dict[str, float] = {}
+    last_descriptor_print = 0.0
     packet_count = 0
     start = time.time()
 
@@ -79,8 +92,11 @@ def main() -> None:
                 elif label == "performance":
                     print("performance " + format_named(PERFORMANCE_NAMES, values))
                 elif label == "descriptors":
-                    # Keep this compact: direct is usually enough for live checks.
-                    pass
+                    # Print full descriptor set at most once per second: useful for direction_coherence.
+                    now = time.time()
+                    if now - last_descriptor_print >= 1.0:
+                        print("descriptors " + format_named(DESCRIPTOR_NAMES, values))
+                        last_descriptor_print = now
                 elif label in {"midi", "note", "rest", "event"}:
                     # Markov is disabled in demo mode by default.
                     print(f"{label:<11} {' '.join(values)}")
