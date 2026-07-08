@@ -59,6 +59,36 @@ class OscSender:
         self.client.send_message("/aquarium/direct", payload)
         self._send_plain("direct", payload)
 
+    def send_granular(self, descriptors: dict[str, float], controls: RuntimeControls) -> list:
+        """Pre-scaled controls ready for the Max granulator (Pan / Density / Noise).
+
+        The Max patch just routes these into the granulator inlets, no scaling needed:
+          /gran/pan     float -1..1   (from flock horizontal position)
+          /gran/density float 0..100  (probability, from number of fish)
+          /gran/nchan   int   1..48   (granular channels, from number of fish)
+          /gran/noise   float 0..1    (chaos: agitation + predator + disorder)
+        Also sent bundled as /gran and as FUDI "gran ... ;" on 7401.
+        """
+        center_x = descriptors.get("center_x", 0.5)
+        fish = descriptors.get("fish_count", 0.0)
+        agitation = descriptors.get("energy", 0.0)
+        coherence = descriptors.get("direction_coherence", 0.0)
+        predator = controls.predator_amount / 3.0
+
+        pan = center_x * 2.0 - 1.0
+        probability = fish * 100.0
+        nchan = 1 + round(fish * 47)
+        noise = max(0.0, min(1.0, agitation * 1.2 + predator * 0.7 + (1.0 - coherence) * 0.2))
+
+        self.client.send_message("/gran/pan", pan)
+        self.client.send_message("/gran/density", probability)
+        self.client.send_message("/gran/nchan", nchan)
+        self.client.send_message("/gran/noise", noise)
+        payload = [pan, probability, nchan, noise]
+        self.client.send_message("/gran", payload)
+        self._send_plain("gran", payload)
+        return payload
+
     def send_music_event(self, event: MusicEvent) -> None:
         self.client.send_message("/music/event", event.osc_payload())
         self._send_plain("event", event.osc_payload())

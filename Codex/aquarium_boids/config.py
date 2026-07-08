@@ -22,6 +22,9 @@ MIDI_CC_MAPPING = {
     # Secondary musical controls.
     25: ("density_fader", 0.0, 1.0, False),
     26: ("section_id", 0.0, 5.0, True),
+    # Population: number of active fish 1..100 (MIDIMIX fader 3 = CC 27). Drives fish_count
+    # -> granular density/probability[0..100]. Move it to another fader by changing the CC.
+    27: ("population", 1.0, 100.0, True),
 }
 
 WIDTH = 1200

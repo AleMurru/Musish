@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from pygame.math import Vector2
 
 from .boids import Boid
+from .config import BOID_COUNT
 
 
 def clamp01(value: float) -> float:
@@ -75,18 +76,31 @@ def compute_descriptors(boids: Iterable[Boid], width: int, height: int) -> dict[
             avg_heading += vel.normalize()
     direction_coherence = clamp01(avg_heading.length() / count)
 
+    # Agitation = average steering effort (how hard fish accelerate/turn this frame).
+    # Independent from mean_speed: a fast but calm school has low agitation, a jittery
+    # or predator-scared school has high agitation. Used below as a real "energy".
+    accelerations = [b.acceleration.length() for b in boids]
+    reference_force = max((b.max_force for b in boids), default=0.055) * 6.0
+    agitation = clamp01((sum(accelerations) / count) / reference_force)
+
     # Lightweight cluster estimate: count occupied coarse grid zones, normalized.
     # It is not a real DBSCAN, but gives a useful live descriptor for day 1/2.
     cell = 180
     occupied = {(int(p.x // cell), int(p.y // cell)) for p in positions}
     cluster_count = clamp01(len(occupied) / 12.0)
 
+    # Expand the centroid around 0.5: the average of ~100 fish stays near the middle,
+    # so raw center_x/y barely leave 0.3..0.7. Expanding makes pan/brightness usable.
+    center_gain = 2.2
+    center_x = clamp01(0.5 + (center.x / width - 0.5) * center_gain)
+    center_y = clamp01(0.5 + (center.y / height - 0.5) * center_gain)
+
     return {
-        "fish_count": clamp01(count / 160.0),
+        "fish_count": clamp01(count / BOID_COUNT),
         "mean_speed": mean_speed,
-        "energy": mean_speed,
-        "center_x": clamp01(center.x / width),
-        "center_y": clamp01(center.y / height),
+        "energy": agitation,  # real agitation (steering effort), independent from mean_speed
+        "center_x": center_x,
+        "center_y": center_y,
         "spread": spread,
         "density": clamp01(1.0 - nearest_distance),
         "nearest_distance": nearest_distance,
