@@ -110,6 +110,23 @@ Notes:
 The `nn~` patch already receives 4 latents and named params. Driving PLAUD from
 the flock = sending numbers to those receives (no patch surgery).
 
+**READY: `/plaud/*` messages (the flock as a moving point in latent space).**
+`main.py` now sends the flock position as a latent-navigation point, ~20 Hz,
+centered to -1..1 (0 = middle of the space):
+
+```text
+/plaud/x       float -1..1        flock horizontal  -> latent dim 0
+/plaud/y       float -1..1        flock vertical    -> latent dim 1
+/plaud/xy      [x y]
+/plaud/latent  [x y z w]          ready 4-vector (z=spread, w=mean_speed)
+```
+
+Max side: route `/plaud/x` `/plaud/y` (+ optionally z,w) -> `[mc.pack~ 4]` ->
+`s ---final_latents`. **Rescale to the model's latent range**: our values are
+-1..1; RAVE-style latents are ~N(0,1) (roughly -3..3), so multiply by ~2-3 (a
+`[* 2.5]` on each) and add a `[line~ 30]` for smooth motion. The exact range is
+the one open question for the PLAUD author (see PLAUD_meeting_brief.md).
+
 **Latents (the "fish navigate the latent space" idea — already reachable):**
 send 4 values into `---final_latents`. Suggested first mapping:
 

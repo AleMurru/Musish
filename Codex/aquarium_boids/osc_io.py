@@ -89,6 +89,28 @@ class OscSender:
         self._send_plain("gran", payload)
         return payload
 
+    def send_plaud(self, descriptors: dict[str, float]) -> tuple[float, float]:
+        """Flock position as a moving point in PLAUD's latent space (for nn~ decode).
+
+        The flock centroid (x, y) navigates the latent space; two more descriptors
+        fill the remaining latent dims of the 4-latent model. All centered to -1..1
+        (0 = middle of the space). Max/Rafael rescales to the model's latent range.
+          /plaud/x       float -1..1   (flock horizontal -> latent dim 0)
+          /plaud/y       float -1..1   (flock vertical   -> latent dim 1)
+          /plaud/xy      [x y]
+          /plaud/latent  [x y z w]     ready 4-vector for [mc.pack~ 4] -> ---final_latents
+        """
+        x = descriptors.get("center_x", 0.5) * 2.0 - 1.0
+        y = descriptors.get("center_y", 0.5) * 2.0 - 1.0
+        z = descriptors.get("spread", 0.0) * 2.0 - 1.0
+        w = descriptors.get("mean_speed", 0.0) * 2.0 - 1.0
+        self.client.send_message("/plaud/x", x)
+        self.client.send_message("/plaud/y", y)
+        self.client.send_message("/plaud/xy", [x, y])
+        self.client.send_message("/plaud/latent", [x, y, z, w])
+        self._send_plain("plaud", [x, y, z, w])
+        return (x, y)
+
     def send_music_event(self, event: MusicEvent) -> None:
         self.client.send_message("/music/event", event.osc_payload())
         self._send_plain("event", event.osc_payload())

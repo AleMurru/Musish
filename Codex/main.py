@@ -165,6 +165,7 @@ def main() -> None:
     next_event_time = 0.0
     descriptors: dict[str, float] = {}
     gran = [0.0, 0.0, 1, 0.0]
+    plaud_xy = (0.0, 0.0)
 
     while True:
         dt = clock.tick(FPS) / (1000.0 / FPS)
@@ -209,14 +210,16 @@ def main() -> None:
             osc.send_controls(controls)
             osc.send_direct_mapping(descriptors, controls)
             gran = osc.send_granular(descriptors, controls)
+            plaud_xy = osc.send_plaud(descriptors)
             last_descriptor_send = now
 
-        # Clean terminal readout of what actually drives the granulator (~2x/sec).
+        # Clean terminal readout: granular controls + PLAUD latent point (~2x/sec).
         if now - last_print >= 0.5:
             pan, density, nchan, noise = gran
+            px, py = plaud_xy
             print(
-                f"GRAN  fish={controls.population:3d}  pan={pan:+.2f}  density={density:5.1f}  "
-                f"nchan={nchan:2d}  noise={noise:.2f}   |  coherence={descriptors.get('direction_coherence', 0):.2f}  "
+                f"GRAN fish={controls.population:3d} density={density:5.1f} nchan={nchan:2d} noise={noise:.2f}  "
+                f"|  PLAUD x={px:+.2f} y={py:+.2f}  |  coherence={descriptors.get('direction_coherence', 0):.2f} "
                 f"spread={descriptors.get('spread', 0):.2f}"
             )
             last_print = now
