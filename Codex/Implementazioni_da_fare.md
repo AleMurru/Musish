@@ -22,7 +22,7 @@ Il tema centrale resta il **divario codice ↔ suono**: il Python genera molto, 
 
 ### 1.1 [P0] Fader food/predator del MIDIMIX non proporzionali (on/off)
 - **Dove:** `main.py:170-173` (accende un attrattore virtuale se `food_amount > 0.01`) + `boids.py:130` e `boids.py:135` (la forza usata è `food_strength`/`predator_strength`, NON `food_amount`/`predator_amount`).
-- **Problema:** i fader 5/6 del MIDIMIX cambiano solo l'on/off, non l'intensità. La doc utente (`DA_LEGGERE_...MAP.md`) li intende 0→3 proporzionali. Mismatch intento/implementazione.
+- **Problema:** i fader 5/6 del MIDIMIX cambiano solo l'on/off, non l'intensità. La doc utente (`docs/MIDIMIX_DIRECT.md`) li intende 0→3 proporzionali. Mismatch intento/implementazione.
 - **Fix (2 righe):** nel caso di attrattore/repulsore virtuale usare `food_amount`/`predator_amount` come intensità. Es. in `boids.flock`, per il ramo virtuale moltiplicare lo steer per `controls.food_amount` (e `predator_amount`) invece che per `food_strength`/`predator_strength`; oppure in `main.py`, quando si attiva l'attrattore virtuale, impostare la forza effettiva = `food_amount`.
 
 ### 1.2 [P3] Rischio doppio-trigger delle note via OSC

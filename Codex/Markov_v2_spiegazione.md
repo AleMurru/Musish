@@ -851,3 +851,46 @@ La Markov v2 è più musicale perché:
 ```
 
 Quindi il sistema non sta ancora “componendo un brano finito”, ma genera materiale musicale strutturato che il musicista può renderizzare bene in Max.
+
+---
+
+## 14. Perché muovendo `alignment_weight` il suono cambia poco
+
+Distinzione importante, fonte di confusione ricorrente.
+
+Con `DEMO_MODE = True` il fader **F1 è mappato su `alignment_chaos`, non su `alignment_weight`**
+(vedi `MIDI_CC_MAPPING_DEMO` in `aquarium_boids/config.py`). `alignment_weight` resta il vecchio
+peso della forza di allineamento dei boids: se lo muovi da tastiera, la Markov v2 lo "sente" solo
+indirettamente, attraverso i descriptor.
+
+Seconda ragione: **la Markov v2 non decide il timbro.** Influenza *quali* eventi vengono generati,
+*quando*, con quanta probabilità, in che registro e con che velocity. Il timbro lo decide Max.
+
+Se Max usa ancora un semplice `noteout` verso un synth generico, sentirai differenze limitate.
+Per differenze evidenti Max deve mappare:
+
+```text
+alignment_chaos  -> distorsione / instabilità / scelta sample / filtro / randomizzazione
+grain_density    -> densità eventi / trigger rate
+noise_distortion -> rumore / saturazione / hit più aggressivi
+```
+
+---
+
+## 15. Leggere gli errori nella console Max
+
+```text
+udpreceiver • binding to port 7400
+```
+
+Non è un errore: significa solo che `udpreceive` si è collegato alla porta 7400.
+
+```text
+patchcord destination not found: deleting patchcord
+route • patchcord destination not found: deleting patchcord
+```
+
+Significa che nella patch ci sono collegamenti salvati verso oggetti che Max non trova più, oppure
+che durante la generazione automatica della patch qualche connessione è rimasta sporca.
+Se senti suoni e vedi messaggi in console, la catena principale funziona: la patch va ripulita,
+ma non è bloccante.

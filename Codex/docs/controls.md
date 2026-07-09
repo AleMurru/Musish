@@ -1,28 +1,26 @@
 # `controls.py` — stato live dei controlli performativi
 
-File di riferimento:
+File studiato:
 
 ```text
 Codex/aquarium_boids/controls.py
 ```
 
-Questo file definisce lo **stato live** del sistema: tutti i parametri che possono cambiare durante la performance.
+Questo file è piccolo, ma è centrale: definisce l'oggetto che contiene **tutti i parametri modificabili durante la performance**.
 
-È uno dei file più importanti perché collega:
+In pratica `controls.py` è il punto in cui si incontrano:
 
 ```text
-MIDIMIX / tastiera / Max controls
+MIDIMIX / tastiera / mouse / Max UDP
 ↓
 RuntimeControls
 ↓
-boids.py + markov.py + osc_io.py
+boids.py + markov.py + osc_io.py + main.py
 ```
 
 ---
 
-# 1. Codice principale
-
-Nel file trovi:
+## 1. Codice completo
 
 ```python
 from dataclasses import dataclass
@@ -39,32 +37,77 @@ class RuntimeControls:
     cohesion_weight: float = 0.9
     separation_weight: float = 1.35
     noise_weight: float = 0.18
-    food_strength: float = 1.0
-    predator_strength: float = 1.0
-    food_amount: float = 0.0
-    predator_amount: float = 0.0
+    food_strength: float = 1.0  # mouse-left attractor multiplier
+    predator_strength: float = 1.0  # mouse-right repeller multiplier
+    food_amount: float = 0.0  # virtual center attractor controlled by MIDIMIX
+    predator_amount: float = 0.0  # virtual center repeller controlled by MIDIMIX
     section_id: int = 0
     paused: bool = False
+
+    @property
+    def section_name(self) -> str:
+        return ["intro", "growth", "dense", "chaos", "release", "outro"][self.section_id]
+
+    def as_list(self) -> list[float]:
+        return [
+            self.density_fader,
+            self.alignment_weight,
+            self.cohesion_weight,
+            self.separation_weight,
+            self.noise_weight,
+            self.food_strength,
+            self.predator_strength,
+            self.food_amount,
+            self.predator_amount,
+            float(self.section_id),
+        ]
 ```
 
 ---
 
-# 2. Cosa significa `@dataclass`
+## 2. Responsabilità del file
+
+`controls.py` non muove i pesci, non genera musica e non manda OSC.
+
+La sua responsabilità è più semplice:
+
+```text
+contenere lo stato live dei controlli performativi
+```
+
+Esempio:
+
+```python
+controls = RuntimeControls()
+```
+
+Da quel momento `controls` diventa una specie di mixer interno del programma:
+
+```python
+controls.density_fader
+controls.alignment_weight
+controls.cohesion_weight
+controls.section_id
+```
+
+Altri file leggono o modificano questi valori.
+
+---
+
+## 3. `dataclass`: perché viene usato
+
+```python
+from dataclasses import dataclass
+```
 
 ```python
 @dataclass
 class RuntimeControls:
 ```
 
-`@dataclass` è un decoratore Python.
+`@dataclass` serve per creare una classe contenitore senza scrivere manualmente il costruttore.
 
-Serve a trasformare una classe usata principalmente per contenere dati in una classe più comoda.
-
----
-
-## Senza `@dataclass`
-
-Dovresti scrivere:
+Senza `@dataclass`, avremmo dovuto scrivere qualcosa tipo:
 
 ```python
 class RuntimeControls:
@@ -72,84 +115,38 @@ class RuntimeControls:
         self.density_fader = 0.25
         self.alignment_weight = 1.0
         self.cohesion_weight = 0.9
-        self.separation_weight = 1.35
-        self.noise_weight = 0.18
+        ...
 ```
 
----
-
-## Con `@dataclass`
-
-Puoi scrivere semplicemente:
+Con `@dataclass`, invece, basta dichiarare i campi:
 
 ```python
 @dataclass
 class RuntimeControls:
     density_fader: float = 0.25
     alignment_weight: float = 1.0
-    cohesion_weight: float = 0.9
 ```
 
-Python genera automaticamente:
+Python genera automaticamente un `__init__` equivalente.
 
-```text
-__init__
-__repr__
-confronti base
-```
-
-Quindi puoi fare:
+Quindi questo funziona subito:
 
 ```python
 controls = RuntimeControls()
 ```
 
-E hai già:
-
-```python
-controls.density_fader
-controls.alignment_weight
-controls.cohesion_weight
-```
+E produce valori iniziali già pronti.
 
 ---
 
-# 3. Perché `@dataclass` è utile qui
-
-`RuntimeControls` è uno **stato live performativo**.
-
-In altre parole è un contenitore di parametri modificabili in tempo reale.
-
-Questo oggetto viene modificato da:
-
-```text
-MIDIMIX
-Max via UDP
-Tastiera
-Mouse
-```
-
-E viene letto da:
-
-```text
-boids.py     → movimento dei pesci
-markov.py    → eventi musicali
-osc_io.py    → invio stato a Max
-main.py      → HUD, loop principale, pause
-```
-
-Quindi `RuntimeControls` è il punto centrale in cui si incontrano controllo, simulazione e musica.
-
----
-
-# 4. `clamp01`
+## 4. `clamp01`
 
 ```python
 def clamp01(value: float) -> float:
     return max(0.0, min(1.0, value))
 ```
 
-Questa funzione forza un valore dentro il range:
+Questa funzione forza un numero dentro il range:
 
 ```text
 0.0 → 1.0
@@ -158,28 +155,44 @@ Questa funzione forza un valore dentro il range:
 Esempi:
 
 ```python
-clamp01(-0.4)  # 0.0
-clamp01(0.6)   # 0.6
-clamp01(1.8)   # 1.0
+clamp01(-0.5)  # 0.0
+clamp01(0.4)   # 0.4
+clamp01(2.0)   # 1.0
 ```
 
-Serve per parametri normalizzati come:
+Serve soprattutto per parametri normalizzati, cioè parametri che devono stare fra 0 e 1.
+
+Nel progetto viene usata principalmente per:
 
 ```text
 density_fader
 ```
 
----
-
-# 5. Parametri principali di `RuntimeControls`
-
-## `density_fader: float = 0.25`
-
-Valore iniziale:
+Attenzione: `clamp01` è definita qui, ma `RuntimeControls` **non la applica automaticamente**. Se qualcuno scrive:
 
 ```python
-0.25
+controls.density_fader = 99
 ```
+
+il valore diventa davvero `99`.
+
+Il clamp viene applicato nei punti in cui i valori vengono ricevuti, per esempio:
+
+- `main.py`, quando si usano UP/DOWN;
+- `midi_in.py`, quando arriva un valore dal MIDIMIX;
+- `control_in.py`, quando arriva un controllo da Max via UDP.
+
+---
+
+## 5. Campi di `RuntimeControls`
+
+### 5.1 `density_fader`
+
+```python
+density_fader: float = 0.25
+```
+
+È uno dei controlli più importanti del progetto.
 
 Range ideale:
 
@@ -187,428 +200,330 @@ Range ideale:
 0.0 → 1.0
 ```
 
-Non controlla direttamente i boids. Controlla la generazione musicale.
+Non controlla direttamente il movimento dei pesci. Controlla soprattutto la generazione musicale.
 
-In `main.py`:
+In `main.py` influenza quanti eventi vengono generati:
 
 ```python
 burst = 1 + int(controls.density_fader * 3.2)
 ```
 
-Quindi:
+In `markov.py` influenza:
 
-```text
-density_fader basso → pochi eventi
-density_fader alto → più eventi per ciclo
-```
+- temperatura della Markov;
+- probabilità di pausa;
+- scelta dei layer;
+- densità percepita degli eventi.
 
-In `markov.py`:
+Concettualmente:
 
-```python
-temperature = 0.25 + controls.density_fader * 0.9 + speed * 0.35
-```
-
-Quindi:
-
-```text
-density_fader alto → Markov più variabile
-```
-
-E:
-
-```python
-rest_probability = max(0.05, 0.62 - controls.density_fader * 0.52 - speed * 0.22)
-```
-
-Quindi:
-
-```text
-density_fader alto → meno pause
-density_fader basso → più pause
-```
-
-### Perché 0.25?
-
-Per partire in uno stato non troppo denso.
-
-```text
-0.0 = troppo vuoto
-1.0 = subito caotico
-0.25 = texture iniziale controllabile
-```
-
-### Se lo cambi
-
-```python
-density_fader = 0.0
-```
-
-partenza molto ambient, pochi eventi.
-
-```python
-density_fader = 0.7
-```
-
-partenza già attiva e musicale.
+| Valore | Risultato |
+|---:|---|
+| `0.0` | pochi eventi, texture lenta/ambient |
+| `0.5` | densità media, pattern più attivi |
+| `1.0` | molti eventi, granularità/glitch |
 
 ---
 
-## `alignment_weight: float = 1.0`
+### 5.2 `alignment_weight`
 
-Controlla quanto ogni boid si allinea alla direzione dei vicini.
+```python
+alignment_weight: float = 1.0
+```
 
-In `boids.py`:
+Controlla quanto i pesci tendono ad allinearsi alla direzione dei vicini.
+
+Usato in `boids.py`:
 
 ```python
 alignment = self.align(boids) * controls.alignment_weight
 ```
 
-### Perché 1.0?
+Effetto visivo:
 
-È un valore neutro.
+| Valore basso | Valore alto |
+|---|---|
+| movimento più indipendente | branco più coordinato |
 
-I boids si allineano, ma non diventano tutti un blocco rigido.
+Effetto musicale indiretto:
 
-### Se lo abbassi
-
-```python
-alignment_weight = 0.0
-```
-
-i boids non seguono più la direzione degli altri.
-
-Movimento più individuale e disordinato.
-
-### Se lo alzi
-
-```python
-alignment_weight = 2.5
-```
-
-il branco si muove più compatto direzionalmente.
-
-Effetto:
-
-```text
-direction_coherence più alta
-movimento più fluido
-suono più stabile
-```
+- aumenta o diminuisce `direction_coherence`;
+- influenza la stabilità ritmica della Markov;
+- rende il movimento più o meno leggibile.
 
 ---
 
-## `cohesion_weight: float = 0.9`
+### 5.3 `cohesion_weight`
 
-Controlla quanto i boids vogliono stare vicini al gruppo.
+```python
+cohesion_weight: float = 0.9
+```
+
+Controlla quanto i pesci tendono ad avvicinarsi al centro dei vicini.
+
+Usato in `boids.py`:
 
 ```python
 cohesion = self.cohesion(boids) * controls.cohesion_weight
 ```
 
-### Perché 0.9?
+Effetto visivo:
 
-Leggermente sotto 1.0 per evitare che i boids collassino troppo al centro.
+| Valore basso | Valore alto |
+|---|---|
+| branco disperso | branco compatto |
 
-### Se lo abbassi
+Effetto musicale indiretto:
 
-```python
-cohesion_weight = 0.0
-```
-
-il branco si disperde.
-
-Effetto:
-
-```text
-spread aumenta
-density diminuisce
-suono più largo/raro
-```
-
-### Se lo alzi
-
-```python
-cohesion_weight = 2.5
-```
-
-i boids tendono a formare una massa compatta.
-
-Effetto:
-
-```text
-density aumenta
-secondo oscillatore Max cambia
-armonia più compatta
-```
+- cambia `density`;
+- cambia `spread`;
+- può rendere il suono più compatto o più rarefatto.
 
 ---
 
-## `separation_weight: float = 1.35`
+### 5.4 `separation_weight`
 
-Controlla quanto i boids si evitano tra loro.
+```python
+separation_weight: float = 1.35
+```
+
+Controlla quanto i pesci si respingono quando sono troppo vicini.
+
+Usato in `boids.py`:
 
 ```python
 separation = self.separation(boids) * controls.separation_weight
 ```
 
-### Perché 1.35?
+Effetto visivo:
 
-È un po' più alto di alignment/cohesion perché serve a evitare sovrapposizioni.
+| Valore basso | Valore alto |
+|---|---|
+| pesci più vicini/sovrapposti | pesci più distanziati |
 
-Senza abbastanza separation, i boids tendono ad ammassarsi.
-
-### Se lo abbassi
-
-```python
-separation_weight = 0.2
-```
-
-i boids possono diventare troppo vicini.
-
-Effetto:
-
-```text
-branco più compatto
-density alta
-meno respiro visuale
-```
-
-### Se lo alzi
-
-```python
-separation_weight = 3.0
-```
-
-i boids si respingono molto.
-
-Effetto:
-
-```text
-più spazio tra individui
-spread/nearest_distance cambiano
-movimento più nervoso
-```
+È una forza importante per evitare che il branco collassi in un unico punto.
 
 ---
 
-## `noise_weight: float = 0.18`
+### 5.5 `noise_weight`
 
-Aggiunge turbolenza random.
+```python
+noise_weight: float = 0.18
+```
+
+Aggiunge casualità al movimento.
+
+Usato in `boids.py`:
 
 ```python
 noise = Vector2(random.uniform(-1, 1), random.uniform(-1, 1)) * self.max_force * controls.noise_weight
 ```
 
-### Perché 0.18?
+Effetto visivo:
 
-Valore basso. Serve solo a non rendere il movimento troppo meccanico.
+| Valore basso | Valore alto |
+|---|---|
+| movimento fluido | movimento nervoso/caotico |
 
-### Se lo abbassi
+Effetto musicale indiretto:
+
+- varia `mean_speed`;
+- rende più instabili i descriptor;
+- aumenta la percezione di caos.
+
+---
+
+### 5.6 `food_strength`
 
 ```python
-noise_weight = 0.0
+food_strength: float = 1.0
 ```
 
-movimento più pulito e prevedibile.
+È il moltiplicatore dell'attrattore attivato con il mouse sinistro.
 
-### Se lo alzi
-
-```python
-noise_weight = 1.0
-```
-
-movimento più instabile.
-
-Effetto:
+Nel progetto ci sono due concetti distinti:
 
 ```text
-mean_speed/energy più variabili
-Markov più imprevedibile
-suono più agitato
+food_strength = forza del food manuale/mouse
+food_amount   = quantità di food virtuale da MIDIMIX/Max
 ```
+
+`food_strength` serve quando l'utente clicca con il mouse sinistro nella finestra Pygame.
 
 ---
 
-# 6. Food e predator
+### 5.7 `predator_strength`
 
-## `food_strength: float = 1.0`
+```python
+predator_strength: float = 1.0
+```
 
-Controlla la forza del mouse sinistro come attrattore.
+È il moltiplicatore del repulsore attivato con il mouse destro.
+
+Anche qui ci sono due concetti distinti:
 
 ```text
-food_strength = mouse-left attractor multiplier
+predator_strength = forza del predatore manuale/mouse
+predator_amount   = quantità di predatore virtuale da MIDIMIX/Max
 ```
 
-Se tieni premuto mouse sinistro, i boids vengono attratti verso il mouse.
-
-### Perché 1.0?
-
-Valore neutro.
-
-### Se lo alzi
-
-```python
-food_strength = 2.5
-```
-
-il mouse attira molto più forte.
-
-### Se lo abbassi
-
-```python
-food_strength = 0.2
-```
-
-il mouse ha effetto più delicato.
+`predator_strength` serve quando l'utente clicca con il mouse destro nella finestra Pygame.
 
 ---
 
-## `predator_strength: float = 1.0`
-
-Controlla la forza del mouse destro come repulsore.
-
-Se tieni premuto mouse destro, i boids scappano dal mouse.
-
-### Perché 1.0?
-
-Valore neutro.
-
-### Se lo alzi
+### 5.8 `food_amount`
 
 ```python
-predator_strength = 3.0
+food_amount: float = 0.0
 ```
 
-effetto fuga molto forte.
+È l'attrattore virtuale controllato dal MIDIMIX o da Max.
 
-### Se lo abbassi
+Nel workflow attuale è mappato al fader 5 del MIDIMIX.
 
-```python
-predator_strength = 0.3
-```
-
-repulsione più morbida.
-
----
-
-## `food_amount: float = 0.0`
-
-Questo è l'attrattore virtuale controllato dal MIDIMIX.
-
-In `main.py`:
+In `main.py`, se `food_amount > 0.01`, viene creato un attrattore virtuale al centro dello schermo:
 
 ```python
 if attractor is None and controls.food_amount > 0.01:
     attractor = Vector2(WIDTH * 0.5, HEIGHT * 0.5)
 ```
 
-Quindi se `food_amount` è alto, anche senza mouse, il centro dello schermo diventa attrattore.
-
-### Perché 0.0?
-
-Per non avere attrattore automatico all'avvio.
-
-### Se lo alzi
+Poi in `boids.py` la forza viene applicata così:
 
 ```python
-food_amount = 2.0
+food_force = controls.food_amount if controls.food_amount > 0.0 else controls.food_strength
+self.acceleration += self._steer_towards(attractor - self.position) * (0.9 * food_force)
 ```
 
-i boids vengono richiamati verso il centro.
-
-Effetto:
-
-```text
-density aumenta
-center_x/center_y vanno verso 0.5
-suono più compatto
-```
+Quindi il fader non è solo ON/OFF: può controllare l'intensità dell'attrazione.
 
 ---
 
-## `predator_amount: float = 0.0`
+### 5.9 `predator_amount`
 
-È il predatore virtuale controllato dal MIDIMIX.
+```python
+predator_amount: float = 0.0
+```
 
-In `main.py`:
+È il repulsore virtuale controllato dal MIDIMIX o da Max.
+
+Nel workflow attuale è mappato al fader 6 del MIDIMIX.
+
+In `main.py`, se `predator_amount > 0.01`, viene creato un repulsore virtuale al centro dello schermo:
 
 ```python
 if repeller is None and controls.predator_amount > 0.01:
     repeller = Vector2(WIDTH * 0.5, HEIGHT * 0.5)
 ```
 
-Quindi se `predator_amount` è alto, il centro dello schermo diventa repulsore.
-
-### Perché 0.0?
-
-Per non far scappare i boids appena parte il programma.
-
-### Se lo alzi
+Poi in `boids.py` la forza viene applicata così:
 
 ```python
-predator_amount = 2.5
+predator_force = controls.predator_amount if controls.predator_amount > 0.0 else controls.predator_strength
+self.acceleration += self._steer_towards(delta) * (2.8 * predator_force * (1.0 - distance / 220.0))
 ```
-
-i boids fuggono dal centro.
 
 Effetto:
 
-```text
-spread aumenta
-energia aumenta
-suono più drammatico
-```
+| Valore basso | Valore alto |
+|---|---|
+| nessun predatore virtuale | fuga forte dal centro |
 
 ---
 
-# 7. Sezione e pausa
-
-## `section_id: int = 0`
-
-Parte da:
-
-```text
-intro
-```
-
-Perché una performance di solito inizia rarefatta.
-
-Se vuoi partire direttamente in una sezione più intensa:
+### 5.10 `section_id`
 
 ```python
-section_id = 2  # dense
+section_id: int = 0
 ```
 
-oppure:
+Rappresenta la sezione musicale corrente.
+
+Mappatura:
+
+| `section_id` | Nome |
+|---:|---|
+| `0` | `intro` |
+| `1` | `growth` |
+| `2` | `dense` |
+| `3` | `chaos` |
+| `4` | `release` |
+| `5` | `outro` |
+
+Viene usato soprattutto in `markov.py` per cambiare la scelta dei layer.
+
+Esempio:
 
 ```python
-section_id = 3  # chaos
+if controls.section_name == "intro":
+    layer_id = random.choices([0, 1, 2], weights=[0.60, 0.25, 0.15], k=1)[0]
+elif controls.section_name == "chaos":
+    layer_id = random.choices([2, 3, 4, 5], weights=[0.25, 0.30, 0.25, 0.20], k=1)[0]
 ```
 
-## `paused: bool = False`
+Quindi la sezione non è solo un'etichetta: cambia il comportamento del generatore musicale.
 
-Controlla se la simulazione è in pausa.
+Attenzione importante: `section_name` usa `section_id` come indice di lista. Quindi `section_id` deve restare tra 0 e 5.
 
-In `main.py`:
+Se qualcuno facesse:
+
+```python
+controls.section_id = 99
+```
+
+questa riga romperebbe:
+
+```python
+controls.section_name
+```
+
+Per questo `midi_in.py` e `control_in.py` limitano il valore a `0..5`.
+
+---
+
+### 5.11 `paused`
+
+```python
+paused: bool = False
+```
+
+Indica se la simulazione visiva è in pausa.
+
+In `main.py`, con `SPACE` viene invertito:
+
+```python
+controls.paused = not controls.paused
+```
+
+Nota importante: nello stato attuale, `paused` ferma l'aggiornamento dei boids, ma non spegne necessariamente tutto il resto.
+
+Nel loop principale:
 
 ```python
 if not controls.paused:
-    ...
+    for boid in flock:
+        boid.flock(...)
+    for boid in flock:
+        boid.update(...)
 ```
 
-Se `paused = True`, i boids smettono di aggiornarsi.
-
-Si cambia con:
+I descriptor vengono ancora calcolati e gli eventi musicali possono ancora essere generati. Quindi `paused` significa principalmente:
 
 ```text
-SPACE
+ferma il movimento dei pesci
 ```
+
+non necessariamente:
+
+```text
+silenzia il sistema
+```
+
+Se in futuro vogliamo una pausa totale, bisogna modificare `main.py`.
 
 ---
 
-# 8. `section_name`
-
-Nel file c'è:
+## 6. `section_name`
 
 ```python
 @property
@@ -616,7 +531,19 @@ def section_name(self) -> str:
     return ["intro", "growth", "dense", "chaos", "release", "outro"][self.section_id]
 ```
 
-Questa proprietà converte `section_id` in un nome testuale.
+`@property` permette di usare una funzione come se fosse un attributo.
+
+Quindi invece di scrivere:
+
+```python
+controls.section_name()
+```
+
+si scrive:
+
+```python
+controls.section_name
+```
 
 Esempio:
 
@@ -631,13 +558,11 @@ Risultato:
 chaos
 ```
 
-Questa proprietà viene usata soprattutto in `markov.py` per cambiare comportamento musicale in base alla sezione.
+Serve perché internamente il programma usa un numero (`section_id`), ma per HUD, logica musicale e messaggi OSC è più leggibile avere anche il nome.
 
 ---
 
-# 9. `as_list`
-
-Nel file c'è:
+## 7. `as_list`
 
 ```python
 def as_list(self) -> list[float]:
@@ -655,141 +580,263 @@ def as_list(self) -> list[float]:
     ]
 ```
 
-Questa funzione trasforma lo stato dei controlli in una lista numerica.
+Questo metodo converte lo stato dei controlli in una lista.
 
-Serve per inviare lo stato corrente a Max:
+Viene usato in `osc_io.py`:
 
 ```python
 self.client.send_message("/aquarium/controls", controls.as_list())
+self._send_plain("controls", controls.as_list())
 ```
 
-Così Max può visualizzare o usare anche i parametri di controllo.
+Quindi Max riceve i controlli in questo ordine:
+
+```text
+density_fader
+alignment_weight
+cohesion_weight
+separation_weight
+noise_weight
+food_strength
+predator_strength
+food_amount
+predator_amount
+section_id
+```
+
+Questo ordine è importante.
+
+Se cambiamo l'ordine qui, bisogna aggiornare anche:
+
+- `docs/OSC_CONTRACT.md`;
+- eventuali patch Max che leggono `controls`;
+- eventuali script di test;
+- qualsiasi documentazione del mapping.
 
 ---
 
-# 10. Come ottenere risultati diversi modificando i valori iniziali
+## 8. Chi modifica `RuntimeControls`
 
-## Preset calmo / ambient
+### 8.1 Tastiera in `main.py`
+
+`main.py` modifica direttamente i controlli quando premi tasti:
+
+```text
+UP/DOWN → density_fader
+A/Z     → alignment_weight
+S/X     → cohesion_weight
+D/C     → separation_weight
+N/M     → noise_weight
+1..6    → section_id
+SPACE   → paused
+```
+
+---
+
+### 8.2 MIDIMIX in `midi_in.py`
+
+`midi_in.py` riceve valori MIDI CC e li assegna ai campi di `RuntimeControls`.
+
+Esempio:
+
+```text
+CC 19 → alignment_weight
+CC 20 → cohesion_weight
+CC 21 → separation_weight
+CC 22 → noise_weight
+CC 23 → food_amount
+CC 24 → predator_amount
+CC 25 → density_fader
+CC 26 → section_id
+```
+
+La mappatura reale è in `config.py`.
+
+---
+
+### 8.3 Max/UDP in `control_in.py`
+
+`control_in.py` permette di mandare controlli a Python via UDP.
+
+Esempi:
+
+```text
+control density_fader 0.75;
+control alignment_weight 1.2;
+control section_id 3;
+```
+
+Anche questi valori vengono applicati allo stesso oggetto `RuntimeControls`.
+
+---
+
+## 9. Chi legge `RuntimeControls`
+
+### 9.1 `boids.py`
+
+Legge i parametri fisici:
+
+```text
+alignment_weight
+cohesion_weight
+separation_weight
+noise_weight
+food_strength
+predator_strength
+food_amount
+predator_amount
+```
+
+Li usa per calcolare accelerazione e movimento dei pesci.
+
+---
+
+### 9.2 `markov.py`
+
+Legge i parametri musicali/formali:
+
+```text
+density_fader
+section_id
+section_name
+```
+
+Li usa per decidere:
+
+- quante pause produrre;
+- quanto rendere variabile la Markov;
+- quali layer favorire;
+- che carattere musicale avere.
+
+---
+
+### 9.3 `osc_io.py`
+
+Legge tutto lo stato e lo manda fuori:
+
+```text
+/aquarium/controls
+/aquarium/section
+/aquarium/direct
+```
+
+---
+
+### 9.4 `main.py`
+
+Lo usa per:
+
+- HUD a schermo;
+- logging CSV;
+- scelta attrattore/repulsore virtuale;
+- pausa;
+- generazione eventi.
+
+---
+
+## 10. Schema mentale da ricordare
+
+La cosa più importante è questa:
+
+```text
+RuntimeControls = stato condiviso della performance
+```
+
+Non è un controller fisico.
+Non è il MIDIMIX.
+Non è Max.
+Non è la tastiera.
+
+È il contenitore centrale che rappresenta il valore corrente dei controlli, indipendentemente da dove arrivino.
+
+```text
+Tastiera ─┐
+MIDIMIX ──┼──> RuntimeControls ───> boids / Markov / OSC / HUD
+Max UDP ─┘
+```
+
+---
+
+## 11. Cose importanti se modifichiamo questo file
+
+### 11.1 Aggiungere un nuovo controllo
+
+Se aggiungiamo un campo, per esempio:
 
 ```python
-density_fader = 0.1
-alignment_weight = 1.5
-cohesion_weight = 0.6
-separation_weight = 1.5
-noise_weight = 0.05
-food_amount = 0.0
-predator_amount = 0.0
-section_id = 0
+reverb_amount: float = 0.0
 ```
 
-Risultato:
+non basta aggiungerlo qui.
 
-```text
-movimento fluido
-pochi eventi
-drone/texture
-```
+Bisogna decidere anche:
+
+1. chi lo modifica?
+   - tastiera?
+   - MIDIMIX?
+   - Max UDP?
+
+2. chi lo usa?
+   - boids?
+   - Markov?
+   - Max?
+
+3. va mandato via OSC?
+   - se sì, aggiornare `as_list` o creare un messaggio dedicato;
+
+4. bisogna aggiornare la documentazione e la patch Max?
 
 ---
 
-## Preset branco compatto
+### 11.2 Non rompere `as_list`
+
+`as_list` è un contratto implicito con Max.
+
+Cambiare l'ordine dei valori può rompere patch che si aspettano un certo campo in una certa posizione.
+
+Meglio aggiungere nuovi valori in fondo, non in mezzo.
+
+---
+
+### 11.3 Validazione non automatica
+
+`RuntimeControls` è una dataclass semplice. Non impedisce valori sbagliati.
+
+Esempio:
 
 ```python
-density_fader = 0.35
-alignment_weight = 1.2
-cohesion_weight = 2.4
-separation_weight = 0.7
-noise_weight = 0.1
-food_amount = 1.5
-predator_amount = 0.0
-section_id = 2
+controls.section_id = -10
+controls.density_fader = 400
 ```
 
-Risultato:
+Python lo accetta.
 
-```text
-branco compatto
-density alta
-suono più concentrato
-```
+La protezione avviene nei file che ricevono input esterno:
+
+- `midi_in.py`;
+- `control_in.py`;
+- `main.py`.
 
 ---
 
-## Preset caos / predatore
+## 12. Riassunto finale
 
-```python
-density_fader = 0.85
-alignment_weight = 0.4
-cohesion_weight = 0.3
-separation_weight = 3.0
-noise_weight = 1.2
-food_amount = 0.0
-predator_amount = 2.5
-section_id = 3
-```
+`controls.py` definisce lo stato live del sistema.
 
-Risultato:
+I punti da ricordare sono:
 
-```text
-fuga
-spread alto
-eventi più densi
-suono glitch/noise
-```
+- `RuntimeControls` è il contenitore centrale dei parametri performativi;
+- `density_fader` è il controllo musicale principale;
+- `alignment/cohesion/separation/noise` controllano il comportamento boids;
+- `food_amount/predator_amount` sono controlli virtuali da MIDIMIX/Max;
+- `food_strength/predator_strength` sono legati ai gesti mouse;
+- `section_id` controlla la forma musicale;
+- `as_list()` è il formato con cui i controlli vengono mandati a Max;
+- se modifichiamo questo file, probabilmente dobbiamo aggiornare anche MIDI, OSC, Max e documentazione.
 
 ---
 
-## Preset sciame elegante
+## 13. Domande successive / approfondimenti
 
-```python
-density_fader = 0.45
-alignment_weight = 2.5
-cohesion_weight = 1.2
-separation_weight = 1.7
-noise_weight = 0.15
-food_amount = 0.2
-predator_amount = 0.0
-section_id = 1
-```
+Questa sezione verrà aggiornata con le prossime domande sul file `controls.py`.
 
-Risultato:
-
-```text
-movimento ordinato
-branco fluido
-musica più regolare
-```
-
----
-
-# Sintesi
-
-`controls.py` risponde alla domanda:
-
-```text
-Qual è lo stato live attuale del sistema?
-```
-
-Contiene i parametri che determinano:
-
-- comportamento dei boids;
-- densità musicale;
-- sezione performativa;
-- attrattori e repulsori;
-- pausa/play.
-
-Se vuoi aggiungere un nuovo parametro controllabile live, parti da:
-
-```text
-Codex/aquarium_boids/controls.py
-```
-
-poi dovrai collegarlo a:
-
-```text
-midi_in.py      // se deve essere controllato da MIDIMIX
-control_in.py   // se deve essere controllato da Max/UDP
-boids.py        // se influenza il movimento
-markov.py       // se influenza la musica
-osc_io.py       // se deve essere mandato a Max
-```

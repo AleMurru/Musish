@@ -18,6 +18,27 @@ Max
 
 In questa modalità Max **non deve leggere il MIDIMIX**. Max resta il renderer sonoro. Python apre direttamente il device MIDI e usa i fader per controllare l'ecosistema.
 
+Rispetto al flusso `MIDIMIX -> Max -> Python -> Max`, quello diretto ha meno passaggi, meno latenza, e i mapping dei fader restano salvati nel codice.
+
+---
+
+## Attenzione: MIDI multi-client su Windows
+
+Max e Python **non possono leggere lo stesso MIDIMIX contemporaneamente**: su Windows un device MIDI può non essere multi-client.
+
+Quindi per la performance principale:
+
+```text
+MIDIMIX aperto da Python
+Max non legge direttamente MIDIMIX
+Max riceve solo dati da Python
+```
+
+Se il musicista vuole usare il MIDIMIX anche per gli effetti in Max, ci sono due possibilità:
+
+1. usare un driver/virtual MIDI multi-client;
+2. lasciare alcuni controlli a Max e altri a Python, con routing più complesso.
+
 ---
 
 ## Avvio
@@ -43,7 +64,7 @@ Se muovi un fader, dovresti vedere:
 
 ```text
 [midi] cc=19 value=87 channel=1
-[midi-map] cc=19 -> alignment_weight = 2.055
+[midi-map] cc=19 -> alignment_chaos = 0.685
 ```
 
 ---
@@ -103,18 +124,18 @@ Procedura:
 1. Muovi il fader che vuoi usare come Fader 1.
 2. Guarda il numero `cc=XX` nel terminale.
 3. Apri `Codex/aquarium_boids/config.py`.
-4. Sostituisci il CC nella tabella `MIDI_CC_MAPPING`.
+4. Sostituisci il CC nella tabella attiva (`MIDI_CC_MAPPING_DEMO` se `DEMO_MODE = True`).
 
 Esempio: se il primo fader stampa `cc=7`, modifica:
 
 ```python
-7: ("alignment_weight", 0.0, 3.0, False),
+7: ("alignment_chaos", 0.0, 1.0, False),
 ```
 
 al posto di:
 
 ```python
-19: ("alignment_weight", 0.0, 3.0, False),
+19: ("alignment_chaos", 0.0, 1.0, False),
 ```
 
 Poi riavvia:
