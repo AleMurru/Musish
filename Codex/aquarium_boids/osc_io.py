@@ -95,10 +95,12 @@ class OscSender:
         The flock centroid (x, y) navigates the latent space; two more descriptors
         fill the remaining latent dims of the 4-latent model. All centered to -1..1
         (0 = middle of the space). Max/Rafael rescales to the model's latent range.
-          /plaud/x       float -1..1   (flock horizontal -> latent dim 0)
-          /plaud/y       float -1..1   (flock vertical   -> latent dim 1)
-          /plaud/xy      [x y]
-          /plaud/latent  [x y z w]     ready 4-vector for [mc.pack~ 4] -> ---final_latents
+          /plaud/x        float -1..1   (flock horizontal -> latent dim 0)
+          /plaud/y        float -1..1   (flock vertical   -> latent dim 1)
+          /plaud/xy       [x y]
+          /plaud/latent   [x y z w]     ready 4-vector for [mc.pack~ 4] -> ---final_latents
+          /plaud/loudness float 0.6..1.4  (fish_count; partial window, artist keeps final say)
+          /plaud/temp     float 0..1      (agitation -> synthesis temperature/chaos)
         """
         x = descriptors.get("center_x", 0.5) * 2.0 - 1.0
         y = descriptors.get("center_y", 0.5) * 2.0 - 1.0
@@ -109,6 +111,12 @@ class OscSender:
         self.client.send_message("/plaud/xy", [x, y])
         self.client.send_message("/plaud/latent", [x, y, z, w])
         self._send_plain("plaud", [x, y, z, w])
+
+        # DSP params driven by the flock (partial windows so the artist keeps control).
+        loudness = 0.6 + descriptors.get("fish_count", 0.0) * 0.8       # 0.6..1.4 within PLAUD 0..2
+        temp = max(0.0, min(1.0, 0.2 + descriptors.get("energy", 0.0) * 1.3))  # agitation -> chaos
+        self.client.send_message("/plaud/loudness", loudness)
+        self.client.send_message("/plaud/temp", temp)
         return (x, y)
 
     def send_music_event(self, event: MusicEvent) -> None:

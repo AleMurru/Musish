@@ -119,7 +119,12 @@ centered to -1..1 (0 = middle of the space):
 /plaud/y       float -1..1        flock vertical    -> latent dim 1
 /plaud/xy      [x y]
 /plaud/latent  [x y z w]          ready 4-vector (z=spread, w=mean_speed)
+/plaud/loudness float 0.6..1.4    fish_count -> loudness (partial window; artist keeps master)
+/plaud/temp     float 0..1        agitation  -> synthesis temperature/chaos
 ```
+
+Latents (ch1..4) navigate the sound; `loudness`/`temp` are DSP params. Map only a
+few, leave the rest (highs, feedback, shape, partials, l1/l2) to the artist by hand.
 
 Max side: route `/plaud/x` `/plaud/y` (+ optionally z,w) -> `[mc.pack~ 4]` ->
 `s ---final_latents`. **Rescale to the model's latent range**: our values are
