@@ -93,19 +93,19 @@ class OscSender:
         """Flock position as a moving point in PLAUD's latent space (for nn~ decode).
 
         The flock centroid (x, y) navigates the latent space; two more descriptors
-        fill the remaining latent dims of the 4-latent model. All centered to -1..1
-        (0 = middle of the space). Max/Rafael rescales to the model's latent range.
-          /plaud/x        float -1..1   (flock horizontal -> latent dim 0)
-          /plaud/y        float -1..1   (flock vertical   -> latent dim 1)
+        fill the remaining latent dims of the 4-latent model. Raw position 0..1
+        (proportional, no early saturation). Max/Rafael rescales to the latent range.
+          /plaud/x        float 0..1    (flock horizontal -> latent dim 0)
+          /plaud/y        float 0..1    (flock vertical   -> latent dim 1)
           /plaud/xy       [x y]
           /plaud/latent   [x y z w]     ready 4-vector for [mc.pack~ 4] -> ---final_latents
           /plaud/loudness float 0.6..1.4  (fish_count; partial window, artist keeps final say)
           /plaud/temp     float 0..1      (agitation -> synthesis temperature/chaos)
         """
-        x = descriptors.get("center_x", 0.5) * 2.0 - 1.0
-        y = descriptors.get("center_y", 0.5) * 2.0 - 1.0
-        z = descriptors.get("spread", 0.0) * 2.0 - 1.0
-        w = descriptors.get("mean_speed", 0.0) * 2.0 - 1.0
+        x = descriptors.get("center_x_raw", 0.5)
+        y = descriptors.get("center_y_raw", 0.5)
+        z = descriptors.get("spread", 0.0)
+        w = descriptors.get("mean_speed", 0.0)
         self.client.send_message("/plaud/x", x)
         self.client.send_message("/plaud/y", y)
         self.client.send_message("/plaud/xy", [x, y])

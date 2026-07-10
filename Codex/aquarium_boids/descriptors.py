@@ -89,11 +89,16 @@ def compute_descriptors(boids: Iterable[Boid], width: int, height: int) -> dict[
     occupied = {(int(p.x // cell), int(p.y // cell)) for p in positions}
     cluster_count = clamp01(len(occupied) / 12.0)
 
-    # Expand the centroid around 0.5: the average of ~100 fish stays near the middle,
-    # so raw center_x/y barely leave 0.3..0.7. Expanding makes pan/brightness usable.
+    # Raw centroid position (0..1) — used for PLAUD latent navigation, proportional and
+    # without early saturation. Kept separate from the expanded version below.
+    center_x_raw = clamp01(center.x / width)
+    center_y_raw = clamp01(center.y / height)
+
+    # Expanded centroid around 0.5: the average of ~100 fish stays near the middle, so raw
+    # center_x/y barely leave 0.3..0.7. Expanding makes the granular pan usable/punchy.
     center_gain = 2.2
-    center_x = clamp01(0.5 + (center.x / width - 0.5) * center_gain)
-    center_y = clamp01(0.5 + (center.y / height - 0.5) * center_gain)
+    center_x = clamp01(0.5 + (center_x_raw - 0.5) * center_gain)
+    center_y = clamp01(0.5 + (center_y_raw - 0.5) * center_gain)
 
     return {
         "fish_count": clamp01(count / BOID_COUNT),
@@ -101,6 +106,8 @@ def compute_descriptors(boids: Iterable[Boid], width: int, height: int) -> dict[
         "energy": agitation,  # real agitation (steering effort), independent from mean_speed
         "center_x": center_x,
         "center_y": center_y,
+        "center_x_raw": center_x_raw,  # raw position for PLAUD latents (not in DESCRIPTOR_ORDER)
+        "center_y_raw": center_y_raw,
         "spread": spread,
         "density": clamp01(1.0 - nearest_distance),
         "nearest_distance": nearest_distance,

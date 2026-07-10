@@ -115,8 +115,8 @@ the flock = sending numbers to those receives (no patch surgery).
 centered to -1..1 (0 = middle of the space):
 
 ```text
-/plaud/x       float -1..1        flock horizontal  -> latent dim 0
-/plaud/y       float -1..1        flock vertical    -> latent dim 1
+/plaud/x       float 0..1         flock horizontal  -> latent dim 0
+/plaud/y       float 0..1         flock vertical    -> latent dim 1
 /plaud/xy      [x y]
 /plaud/latent  [x y z w]          ready 4-vector (z=spread, w=mean_speed)
 /plaud/loudness float 0.6..1.4    fish_count -> loudness (partial window; artist keeps master)
@@ -127,10 +127,12 @@ Latents (ch1..4) navigate the sound; `loudness`/`temp` are DSP params. Map only 
 few, leave the rest (highs, feedback, shape, partials, l1/l2) to the artist by hand.
 
 Max side: route `/plaud/x` `/plaud/y` (+ optionally z,w) -> `[mc.pack~ 4]` ->
-`s ---final_latents`. **Rescale to the model's latent range**: our values are
--1..1; RAVE-style latents are ~N(0,1) (roughly -3..3), so multiply by ~2-3 (a
-`[* 2.5]` on each) and add a `[line~ 30]` for smooth motion. The exact range is
-the one open question for the PLAUD author (see PLAUD_meeting_brief.md).
+`s ---final_latents`. Values are raw position **0..1**, proportional and without
+early saturation. **Tuning:** the flock centroid (average of ~100 fish) naturally
+stays in ~0.3..0.7, so map that practical band to the latent range with
+`[scale 0.3 0.7 <latMin> <latMax>]` (extrapolates, no hard wall) + `[line 30]` for
+smoothness. Fewer fish (`-` key) = wider natural travel. Exact latent range: ask
+the PLAUD author (see PLAUD_meeting_brief.md).
 
 **Latents (the "fish navigate the latent space" idea — already reachable):**
 send 4 values into `---final_latents`. Suggested first mapping:
