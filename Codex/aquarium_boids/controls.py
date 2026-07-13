@@ -16,6 +16,7 @@ class RuntimeControls:
     predator_strength: float = 1.0  # mouse-right repeller multiplier
     food_amount: float = 0.0  # virtual center attractor controlled by MIDIMIX
     predator_amount: float = 0.0  # virtual center repeller controlled by MIDIMIX
+    population: int = 100  # live number of fish (1..BOID_COUNT); drives fish_count -> granular density
     section_id: int = 0
     paused: bool = False
 

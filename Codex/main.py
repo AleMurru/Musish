@@ -42,6 +42,21 @@ def create_flock(count: int) -> list[Boid]:
     return [Boid.create(i, WIDTH, HEIGHT) for i in range(count)]
 
 
+def resize_flock(flock: list[Boid], target: int) -> list[Boid]:
+    """Grow or shrink the flock in place to `target` fish (1..BOID_COUNT).
+
+    Lets the number of fish be a live control (keyboard -/= or MIDIMIX fader),
+    so fish_count -> granular density/probability actually varies.
+    """
+    target = max(1, min(BOID_COUNT, int(target)))
+    if len(flock) > target:
+        del flock[target:]
+    elif len(flock) < target:
+        for i in range(len(flock), target):
+            flock.append(Boid.create(i, WIDTH, HEIGHT))
+    return flock
+
+
 def write_log_header(path: Path) -> None:
     path.parent.mkdir(exist_ok=True)
     if not path.exists():
@@ -88,8 +103,12 @@ def handle_key(event: pygame.event.Event, controls: RuntimeControls, flock: list
         controls.noise_weight += 0.03
     elif event.key == pygame.K_m:
         controls.noise_weight = max(0.0, controls.noise_weight - 0.03)
+    elif event.key == pygame.K_MINUS:
+        controls.population = max(1, controls.population - 5)
+    elif event.key == pygame.K_EQUALS:
+        controls.population = min(BOID_COUNT, controls.population + 5)
     elif event.key == pygame.K_r:
-        return create_flock(BOID_COUNT)
+        return create_flock(controls.population)
     elif pygame.K_1 <= event.key <= pygame.K_6:
         controls.section_id = event.key - pygame.K_1
     return flock
@@ -101,6 +120,7 @@ def draw_hud(surface: pygame.Surface, font: pygame.font.Font, controls: RuntimeC
         f"density_fader UP/DOWN: {controls.density_fader:.2f} | section 1-6: {controls.section_name}",
         f"A/Z align {controls.alignment_weight:.2f} | S/X cohesion {controls.cohesion_weight:.2f} | D/C separation {controls.separation_weight:.2f} | N/M noise {controls.noise_weight:.2f}",
         f"food_amount {controls.food_amount:.2f} | predator_amount {controls.predator_amount:.2f} | mouse food/pred {controls.food_strength:.2f}/{controls.predator_strength:.2f}",
+        f"fish -/= : {controls.population} (fish_count {descriptors.get('fish_count', 0):.2f}) -> granular density",
         "Mouse left = food/attractor | mouse right = predator/repeller | SPACE pause | R reset",
         f"OSC out: {OSC_HOST}:{OSC_PORT} | plain out: 7401 | control in: {CONTROL_PORT}",
         f"mean_speed {descriptors.get('mean_speed', 0):.2f} | density {descriptors.get('density', 0):.2f} | spread {descriptors.get('spread', 0):.2f} | coherence {descriptors.get('direction_coherence', 0):.2f}",
@@ -141,8 +161,11 @@ def main() -> None:
 
     last_descriptor_send = 0.0
     last_log = 0.0
+    last_print = 0.0
     next_event_time = 0.0
     descriptors: dict[str, float] = {}
+    gran = [0.0, 0.0, 1, 0.0]
+    plaud_xy = (0.0, 0.0)
 
     while True:
         dt = clock.tick(FPS) / (1000.0 / FPS)
@@ -172,6 +195,8 @@ def main() -> None:
         if repeller is None and controls.predator_amount > 0.01:
             repeller = Vector2(WIDTH * 0.5, HEIGHT * 0.5)
 
+        flock = resize_flock(flock, controls.population)
+
         if not controls.paused:
             for boid in flock:
                 boid.flock(flock, controls, WIDTH, HEIGHT, attractor=attractor, repeller=repeller)
@@ -184,7 +209,20 @@ def main() -> None:
             osc.send_descriptors(descriptors)
             osc.send_controls(controls)
             osc.send_direct_mapping(descriptors, controls)
+            gran = osc.send_granular(descriptors, controls)
+            plaud_xy = osc.send_plaud(descriptors)
             last_descriptor_send = now
+
+        # Clean terminal readout: granular controls + PLAUD latent point (~2x/sec).
+        if now - last_print >= 0.5:
+            pan, density, nchan, noise = gran
+            px, py = plaud_xy
+            print(
+                f"GRAN fish={controls.population:3d} density={density:5.1f} nchan={nchan:2d} noise={noise:.2f}  "
+                f"|  PLAUD x={px:+.2f} y={py:+.2f}  |  coherence={descriptors.get('direction_coherence', 0):.2f} "
+                f"spread={descriptors.get('spread', 0):.2f}"
+            )
+            last_print = now
 
         if now - last_log >= 0.25:
             append_log(log_path, now, descriptors, controls)
@@ -198,11 +236,6 @@ def main() -> None:
                 osc.send_music_event(event)
                 if event.event_type == "note" and flock:
                     random.choice(flock).flash = 1.0
-                print(
-                    f"/music/{event.event_type} id={event.event_id} degree={event.degree} oct={event.octave} "
-                    f"dur={event.duration_beats} vel={event.velocity} layer={LAYERS[event.layer_id]} "
-                    f"section={SECTIONS[event.section_id]}"
-                )
             events_per_second = 0.45 + controls.density_fader * 5.5 + descriptors.get("mean_speed", 0.0) * 2.0
             next_event_time = now + max(0.08, 1.0 / events_per_second)
 
