@@ -43,7 +43,7 @@ Se muovi un fader, dovresti vedere:
 
 ```text
 [midi] cc=19 value=87 channel=1
-[midi-map] cc=19 -> alignment_weight = 2.055
+[midi-map] cc=19 -> population = 69
 ```
 
 ---
@@ -58,31 +58,34 @@ Codex/aquarium_boids/config.py
 
 Tabella:
 
+Gli 8 fader fisici dell'AKAI MIDIMIX emettono CC `19, 23, 27, 31, 49, 53, 57, 61`
+(fader 1..8), uno per parametro. `alignment_weight` resta fisso al default (1.0).
+
 ```python
 MIDI_CC_MAPPING = {
-    19: ("alignment_weight", 0.0, 3.0, False),
-    20: ("cohesion_weight", 0.0, 3.0, False),
-    21: ("separation_weight", 0.0, 4.0, False),
-    22: ("noise_weight", 0.0, 1.5, False),
-    23: ("food_amount", 0.0, 3.0, False),
-    24: ("predator_amount", 0.0, 3.0, False),
-    25: ("density_fader", 0.0, 1.0, False),
-    26: ("section_id", 0.0, 5.0, True),
+    19: ("population", 1.0, 100.0, True),        # fader 1
+    23: ("cohesion_weight", 0.0, 3.0, False),    # fader 2
+    27: ("separation_weight", 0.0, 4.0, False),  # fader 3
+    31: ("noise_weight", 0.0, 1.5, False),       # fader 4
+    49: ("food_amount", 0.0, 3.0, False),        # fader 5
+    53: ("predator_amount", 0.0, 3.0, False),    # fader 6
+    57: ("density_fader", 0.0, 1.0, False),      # fader 7
+    61: ("section_id", 0.0, 5.0, True),          # fader 8
 }
 ```
 
 Significato:
 
-| CC | Parametro | Range | Effetto |
-|---:|---|---:|---|
-| 19 | `alignment_weight` | 0..3 | allineamento boids |
-| 20 | `cohesion_weight` | 0..3 | compattezza branco |
-| 21 | `separation_weight` | 0..4 | dispersione |
-| 22 | `noise_weight` | 0..1.5 | turbolenza |
-| 23 | `food_amount` | 0..3 | attrattore virtuale verso il centro |
-| 24 | `predator_amount` | 0..3 | repulsore virtuale dal centro |
-| 25 | `density_fader` | 0..1 | quantità eventi Markov |
-| 26 | `section_id` | 0..5 int | sezione musicale |
+| Fader | CC | Parametro | Range | Effetto |
+|---:|---:|---|---:|---|
+| 1 | 19 | `population` | 1..100 | numero di pesci → densità granulare |
+| 2 | 23 | `cohesion_weight` | 0..3 | compattezza branco |
+| 3 | 27 | `separation_weight` | 0..4 | dispersione |
+| 4 | 31 | `noise_weight` | 0..1.5 | agitazione / turbolenza |
+| 5 | 49 | `food_amount` | 0..3 | attrattore virtuale verso il centro |
+| 6 | 53 | `predator_amount` | 0..3 | repulsore virtuale dal centro (fuga) |
+| 7 | 57 | `density_fader` | 0..1 | quantità eventi musicali (non muove i pesci) |
+| 8 | 61 | `section_id` | 0..5 int | sezione musicale (non muove i pesci) |
 
 ---
 
@@ -103,16 +106,16 @@ Procedura:
 3. Apri `Codex/aquarium_boids/config.py`.
 4. Sostituisci il CC nella tabella `MIDI_CC_MAPPING`.
 
-Esempio: se il primo fader stampa `cc=7`, modifica:
+Esempio: se il fader 1 stampa `cc=7`, modifica:
 
 ```python
-7: ("alignment_weight", 0.0, 3.0, False),
+7: ("population", 1.0, 100.0, True),
 ```
 
 al posto di:
 
 ```python
-19: ("alignment_weight", 0.0, 3.0, False),
+19: ("population", 1.0, 100.0, True),
 ```
 
 Poi riavvia:
