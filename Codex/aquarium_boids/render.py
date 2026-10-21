@@ -11,6 +11,7 @@ import time
 from contextlib import contextmanager
 
 import pygame
+import pygame.gfxdraw
 from pygame.math import Vector2
 
 from .boids import Boid
@@ -392,6 +393,130 @@ class FishSprites:
             self.halo.append(halo_by_heat)
 
 
+# Food and predator cues. Strength mirrors the simulation (boids.py:130,136): the fader
+# amount if > 0, else the mouse strength; both range 0..3. Timing uses frame counts, never
+# the global random or the clock, so the picture stays deterministic for a given run.
+FOOD_COLOR = (20, 150, 140)  # teal; drawn with MAX, so fish gathering on it never add to white
+FOOD_RADIUS = (34.0, 90.0)  # world px at strength 0 .. max
+FOOD_STEPS = 12
+FOOD_BREATH_FRAMES = 150  # one gentle breath every 2.5 s at 60 fps
+PREDATOR_RADIUS = 220.0  # the boids' fear radius (boids.py:135): the pulse shows it
+PREDATOR_RING_COLOR = (120, 60, 255)
+PREDATOR_CORE_COLOR = (60, 24, 150)
+PREDATOR_CORE_RADIUS = 26.0
+PREDATOR_PULSE_FRAMES = 48  # a new ring every 0.8 s while the predator is active
+PREDATOR_RING_FRAMES = 42  # ring lifetime
+PREDATOR_FLASH = (46, 0, 38)  # additive tint at onset
+PREDATOR_FLASH_DECAY = 0.82  # per frame (~0.3 s)
+
+
+def strength01(amount: float, mouse_strength: float) -> float:
+    return max(0.0, min(1.0, (amount if amount > 0.0 else mouse_strength) / 3.0))
+
+
+def _soft_disc(radius_px: float, color: tuple[int, int, int], brightness: float) -> pygame.Surface:
+    """Round glow sprite with a smooth radial falloff (1 - r/R)^1.3 that reaches 0 at radius_px."""
+    side = 2 * (int(math.ceil(radius_px)) + 2)
+    big = pygame.Surface((side * 2, side * 2))
+    steps = 32
+    for k in range(steps):  # outer to inner: each smaller circle is brighter
+        r = 1.0 - k / steps
+        level = int(255 * (1.0 - r) ** 1.3)
+        pygame.draw.circle(big, (level, level, level), (side, side), radius_px * 2 * r)
+    disc = _soft(pygame.transform.smoothscale(big, (side, side)), 2)
+    disc.fill(tuple(int(c * brightness) for c in color), special_flags=pygame.BLEND_RGB_MULT)
+    return disc.convert()
+
+
+class EventSprites:
+    """Pre-rendered food glows (by strength) and predator core for one view scale."""
+
+    def __init__(self, scale: float):
+        lo, hi = FOOD_RADIUS
+        self.food = [
+            _soft_disc((lo + (hi - lo) * i / (FOOD_STEPS - 1)) * scale, FOOD_COLOR, 0.7 + 0.3 * i / (FOOD_STEPS - 1))
+            for i in range(FOOD_STEPS)
+        ]
+        self.predator_core = _soft_disc(PREDATOR_CORE_RADIUS * scale, PREDATOR_CORE_COLOR, 1.0)
+
+
+class EventLayer:
+    """Food glow, predator rings and onset flash, drawn on top of the fish."""
+
+    def __init__(self) -> None:
+        self.frame = 0
+        self.predator_was_active = False
+        self.last_ring = -PREDATOR_PULSE_FRAMES
+        self.rings: list[tuple[int, Vector2, float]] = []  # (birth frame, world position, strength)
+        self.flash = 0.0
+        self._sprites: dict[float, EventSprites] = {}
+        self._tint: pygame.Surface | None = None
+
+    def draw(
+        self,
+        canvas: pygame.Surface,
+        view: View,
+        attractor: Vector2 | None,
+        repeller: Vector2 | None,
+        controls: RuntimeControls,
+    ) -> None:
+        self.frame += 1
+        scale = view.scale
+        ox, oy = view.rect.topleft
+        key = round(scale, 4)
+        sprites = self._sprites.get(key)
+        if sprites is None:
+            sprites = self._sprites[key] = EventSprites(scale)
+
+        if attractor is not None:
+            food = strength01(controls.food_amount, controls.food_strength)
+            breath = 0.5 + 0.5 * math.sin(math.tau * self.frame / FOOD_BREATH_FRAMES)
+            index = round((0.25 + 0.75 * food) * (FOOD_STEPS - 1) - breath * 1.5)
+            glow = sprites.food[max(0, min(FOOD_STEPS - 1, index))]
+            half = glow.get_width() // 2
+            canvas.blit(glow, (ox + attractor.x * scale - half, oy + attractor.y * scale - half),
+                        special_flags=pygame.BLEND_RGB_MAX)
+
+        active = repeller is not None
+        if active:
+            predator = strength01(controls.predator_amount, controls.predator_strength)
+            if not self.predator_was_active:
+                self.flash = 1.0
+            if self.frame - self.last_ring >= PREDATOR_PULSE_FRAMES:
+                self.rings.append((self.frame, Vector2(repeller), predator))
+                self.last_ring = self.frame
+            core = sprites.predator_core
+            half = core.get_width() // 2
+            canvas.blit(core, (ox + repeller.x * scale - half, oy + repeller.y * scale - half),
+                        special_flags=pygame.BLEND_RGB_MAX)
+        else:
+            self.last_ring = -PREDATOR_PULSE_FRAMES  # next onset rings immediately
+        self.predator_was_active = active
+
+        alive = []
+        for birth, pos, strength in self.rings:
+            t = (self.frame - birth) / PREDATOR_RING_FRAMES
+            if t >= 1.0:
+                continue
+            alive.append((birth, pos, strength))
+            radius = PREDATOR_RADIUS * scale * (0.15 + 0.85 * (1.0 - (1.0 - t) ** 2))
+            level = (1.0 - t) * (0.4 + 0.6 * strength)
+            color = tuple(int(c * level) for c in PREDATOR_RING_COLOR)
+            cx, cy = int(ox + pos.x * scale), int(oy + pos.y * scale)
+            for dr in (0, 1, 2):
+                pygame.gfxdraw.aacircle(canvas, cx, cy, int(radius) + dr, color)
+        self.rings = alive
+
+        if self.flash > 0.03:
+            if self._tint is None or self._tint.get_size() != view.rect.size:
+                self._tint = pygame.Surface(view.rect.size).convert()
+            self._tint.fill(tuple(int(c * self.flash) for c in PREDATOR_FLASH))
+            canvas.blit(self._tint, view.rect.topleft, special_flags=pygame.BLEND_RGB_ADD)
+            self.flash *= PREDATOR_FLASH_DECAY
+        else:
+            self.flash = 0.0
+
+
 class ThermalRenderer:
     """Dark "thermal" look, drawn directly at canvas resolution through the view.
 
@@ -408,6 +533,7 @@ class ThermalRenderer:
         self._sprite_cache: dict[float, FishSprites] = {}
         self._glow_blob_cache: dict[float, GlowBlobs] = {}
         self._glow_buffers: GlowBuffers | None = None
+        self._events = EventLayer()
         # Persistent picture of the world area: faded each frame instead of cleared (trails).
         # Only fish go in here; rings and HUD are drawn on the canvas so they never smear.
         self._scene: pygame.Surface | None = None
@@ -486,10 +612,7 @@ class ThermalRenderer:
                 buffers.update(glow_blobs, trail_fade(energy) if self.trails else None, glow_gain(energy))
                 canvas.blit(buffers.output, view.rect.topleft, special_flags=pygame.BLEND_RGB_ADD)
         with _stage("thermal.events"):
-            if attractor is not None:
-                pygame.draw.circle(canvas, (80, 255, 150), (ox + attractor.x * scale, oy + attractor.y * scale), 18 * scale, 2)
-            if repeller is not None:
-                pygame.draw.circle(canvas, (255, 80, 90), (ox + repeller.x * scale, oy + repeller.y * scale), 34 * scale, 2)
+            self._events.draw(canvas, view, attractor, repeller, controls)
         canvas.set_clip(None)
         if self.mode == "data":
             draw_hud(canvas, self.font, controls, descriptors, origin=view.rect.topleft)
