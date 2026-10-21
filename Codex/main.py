@@ -127,6 +127,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default="art",
         help="thermal look: 'art' = no text (default, for recording), 'data' = with HUD; H toggles",
     )
+    parser.add_argument("--no-trails", action="store_true", help="thermal look: start without trails (T toggles)")
     parser.add_argument(
         "--size",
         type=parse_size,
@@ -154,7 +155,11 @@ def main(argv: list[str] | None = None) -> None:
     display = Display((WIDTH, HEIGHT), args.size, "Aquarium Boids OSC -> Max", fullscreen=args.fullscreen)
     clock = pygame.time.Clock()
     font = pygame.font.SysFont("consolas", 16)
-    renderer = ClassicRenderer(font) if args.classic else ThermalRenderer(font, mode=args.mode)
+    renderer = (
+        ClassicRenderer(font)
+        if args.classic
+        else ThermalRenderer(font, mode=args.mode, trails=not args.no_trails)
+    )
 
     controls = RuntimeControls()
     flock = create_flock(BOID_COUNT)

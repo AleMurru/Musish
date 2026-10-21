@@ -216,6 +216,20 @@ CORE_STOPS = ((10, 5, 15), (30, 40, 10), (0, 85, 15))
 HALO_STOPS = ((16, 3, 32), (34, 5, 30), (45, 8, 24))
 
 
+# Trails: each frame the previous picture is multiplied by fade/256, then TRAIL_FLOOR is
+# subtracted (an 8-bit multiply alone never reaches black; it stalls at a dim residue).
+# Persistence follows flock energy (agitation): calm = short trails, agitated = long.
+TRAIL_FADE_CALM = 205  # x0.80 per frame
+TRAIL_FADE_AGITATED = 245  # x0.96 per frame (~0.25 s)
+TRAIL_ENERGY_FULL = 0.45  # energy at which trails reach full length (live logs: p50 ~0.2, p95 ~0.4)
+TRAIL_FLOOR = 2
+
+
+def trail_fade(energy: float) -> int:
+    t = max(0.0, min(1.0, energy / TRAIL_ENERGY_FULL))
+    return int(round(TRAIL_FADE_CALM + (TRAIL_FADE_AGITATED - TRAIL_FADE_CALM) * t))
+
+
 def _lerp_stops(stops: tuple[tuple[int, int, int], ...], t: float) -> tuple[int, int, int]:
     t = max(0.0, min(1.0, t)) * (len(stops) - 1)
     i = min(int(t), len(stops) - 2)
@@ -304,14 +318,24 @@ class ThermalRenderer:
 
     MODES = ("art", "data")
 
-    def __init__(self, font: pygame.font.Font, mode: str = "art"):
+    def __init__(self, font: pygame.font.Font, mode: str = "art", trails: bool = True):
         self.font = font
         self.mode = mode
+        self.trails = trails
         self._sprite_cache: dict[float, FishSprites] = {}
+        # Persistent picture of the world area: faded each frame instead of cleared (trails).
+        # Only fish go in here; rings and HUD are drawn on the canvas so they never smear.
+        self._scene: pygame.Surface | None = None
+        self._fade_surface: pygame.Surface | None = None
+        self._fade_value = -1
+        self._floor_surface: pygame.Surface | None = None
 
     def handle_key(self, key: int) -> bool:
         if key == pygame.K_h:
             self.mode = "data" if self.mode == "art" else "art"
+            return True
+        if key == pygame.K_t:
+            self.trails = not self.trails
             return True
         return False
 
@@ -325,13 +349,43 @@ class ThermalRenderer:
         controls: RuntimeControls,
         descriptors: dict[str, float],
     ) -> None:
-        with _stage("thermal.background"):
-            canvas.fill(THERMAL_BACKGROUND)
-        canvas.set_clip(view.rect)
         scale = view.scale
         ox, oy = view.rect.topleft
+        scene = self._scene
+        if scene is None or scene.get_size() != view.rect.size:
+            scene = self._scene = pygame.Surface(view.rect.size).convert()
+            scene.fill(THERMAL_BACKGROUND)
+            # Fade via blits from constant surfaces: blit blending has SIMD paths, while
+            # Surface.fill(special_flags=...) is scalar (measured ~0.2 ms vs ~11 ms).
+            self._fade_surface = scene.copy()
+            self._fade_value = -1
+            self._floor_surface = scene.copy()
+            self._floor_surface.fill((TRAIL_FLOOR,) * 3)
+        with _stage("thermal.trails"):
+            if self.trails:
+                fade = trail_fade(descriptors.get("energy", 0.0))
+                if fade != self._fade_value:
+                    self._fade_surface.fill((fade, fade, fade))
+                    self._fade_value = fade
+                scene.blit(self._fade_surface, (0, 0), special_flags=pygame.BLEND_RGB_MULT)
+                scene.blit(self._floor_surface, (0, 0), special_flags=pygame.BLEND_RGB_SUB)
+            else:
+                scene.fill(THERMAL_BACKGROUND)
+        canvas.fill(THERMAL_BACKGROUND)
+        canvas.set_clip(view.rect)
         with _stage("thermal.fish"):
-            self._draw_fish(canvas, flock, self._sprites_for(scale), scale, ox, oy)
+            halos, bodies, scene_bodies = self._fish_blits(flock, self._sprites_for(scale), scale, ox, oy)
+            canvas.blits(halos, doreturn=False)
+        with _stage("thermal.compose"):
+            # The scene holds only the past (faded). MAX keeps every pixel at
+            # max(halo glow, trail, body): trails never stack on top of the glow.
+            canvas.blit(scene, view.rect.topleft, special_flags=pygame.BLEND_RGB_MAX)
+        with _stage("thermal.fish"):
+            canvas.blits(bodies, doreturn=False)
+            if self.trails:
+                # Trails hold bodies only, with MAX: however long the trail, a pixel never gets
+                # brighter than one sprite (additive halos in a fading buffer would pile up).
+                scene.blits(scene_bodies, doreturn=False)
         with _stage("thermal.events"):
             if attractor is not None:
                 pygame.draw.circle(canvas, (80, 255, 150), (ox + attractor.x * scale, oy + attractor.y * scale), 18 * scale, 2)
@@ -350,17 +404,20 @@ class ThermalRenderer:
         return sprites
 
     @staticmethod
-    def _draw_fish(
-        canvas: pygame.Surface,
+    def _fish_blits(
         flock: list[Boid],
         sprites: FishSprites,
         scale: float,
         ox: int,
         oy: int,
-    ) -> None:
-        """Halos first (additive: dense areas glow), then bodies (MAX: overlaps never sum)."""
+    ) -> tuple[list, list, list]:
+        """Blit lists: halos (additive, canvas), bodies (MAX, canvas), bodies (MAX, scene).
+
+        Halos go first so dense areas glow; bodies use MAX so overlapping fish never sum.
+        """
         halos = []
         bodies = []
+        scene_bodies = []
         for boid in flock:
             velocity = boid.velocity
             heat = min(1.0, velocity.length() / boid.max_speed + 0.6 * boid.flash)
@@ -368,8 +425,10 @@ class ThermalRenderer:
             heading_i = round(math.atan2(velocity.y, velocity.x) * HEADINGS / math.tau) % HEADINGS
             size_i = 0 if boid.size < SIZE_EDGES[0] else (1 if boid.size < SIZE_EDGES[1] else 2)
             half = sprites.half[size_i]
-            pos = (ox + boid.position.x * scale - half, oy + boid.position.y * scale - half)
-            halos.append((sprites.halo[size_i][heat_i][heading_i], pos, None, pygame.BLEND_RGB_ADD))
-            bodies.append((sprites.body[size_i][heat_i][heading_i], pos, None, pygame.BLEND_RGB_MAX))
-        canvas.blits(halos, doreturn=False)
-        canvas.blits(bodies, doreturn=False)
+            body = sprites.body[size_i][heat_i][heading_i]
+            x = boid.position.x * scale - half
+            y = boid.position.y * scale - half
+            halos.append((sprites.halo[size_i][heat_i][heading_i], (ox + x, oy + y), None, pygame.BLEND_RGB_ADD))
+            bodies.append((body, (ox + x, oy + y), None, pygame.BLEND_RGB_MAX))
+            scene_bodies.append((body, (x, y), None, pygame.BLEND_RGB_MAX))
+        return halos, bodies, scene_bodies
