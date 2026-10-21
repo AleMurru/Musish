@@ -7,6 +7,7 @@ the simulation and the Markov generator, so any extra call would change the OSC 
 from __future__ import annotations
 
 import math
+import random
 import time
 from contextlib import contextmanager
 
@@ -517,6 +518,75 @@ class EventLayer:
             self.flash = 0.0
 
 
+# Particles: sparse drifting motes in three depth layers, behind the fish. They use a
+# private random.Random instance; the global `random` (shared with the simulation) is
+# never touched. Drift speed follows the flock's mean_speed: the water stirs with the school.
+PARTICLE_COUNT = 180
+PARTICLE_SEED = 7
+# (radius in world px, speed factor, colour) from far to near
+PARTICLE_LAYERS = (
+    (1.1, 0.35, (22, 18, 46)),
+    (1.7, 0.6, (32, 26, 64)),
+    (2.4, 1.0, (44, 36, 88)),
+)
+PARTICLE_DRIFT = (0.06, -0.16)  # world px per frame at speed factor 1 (slow rise)
+PARTICLE_SPEED_GAIN = 1.6  # drift multiplier = 0.4 + gain * mean_speed
+PARTICLE_TWINKLE_LEVELS = 4
+
+
+class ParticleField:
+    def __init__(self, world_size: tuple[int, int]):
+        self.world_size = world_size
+        rng = random.Random(PARTICLE_SEED)
+        ww, wh = world_size
+        # [x, y, layer, phase]
+        self.particles = [
+            [rng.uniform(0, ww), rng.uniform(0, wh), rng.choice((0, 0, 1, 1, 2)), rng.uniform(0, math.tau)]
+            for _ in range(PARTICLE_COUNT)
+        ]
+        self.frame = 0
+        self._sprites: dict[float, tuple[list[list[pygame.Surface]], list[int]]] = {}
+
+    def _sprites_for(self, scale: float) -> tuple[list[list[pygame.Surface]], list[int]]:
+        key = round(scale, 4)
+        cached = self._sprites.get(key)
+        if cached is None:
+            sprites = []
+            halves = []
+            for radius, _speed, color in PARTICLE_LAYERS:
+                levels = [
+                    _soft_disc(radius * 2.2 * scale, color, 0.45 + 0.55 * i / (PARTICLE_TWINKLE_LEVELS - 1))
+                    for i in range(PARTICLE_TWINKLE_LEVELS)
+                ]
+                sprites.append(levels)
+                halves.append(levels[0].get_width() // 2)
+            cached = self._sprites[key] = (sprites, halves)
+        return cached
+
+    def draw(self, canvas: pygame.Surface, view: View, mean_speed: float) -> None:
+        self.frame += 1
+        sprites, halves = self._sprites_for(view.scale)
+        scale = view.scale
+        ox, oy = view.rect.topleft
+        ww, wh = self.world_size
+        drift = 0.4 + PARTICLE_SPEED_GAIN * mean_speed
+        dx, dy = PARTICLE_DRIFT
+        frame = self.frame
+        top = PARTICLE_TWINKLE_LEVELS - 1
+        blits = []
+        for p in self.particles:
+            layer = p[2]
+            speed = PARTICLE_LAYERS[layer][1] * drift
+            sway = 0.12 * math.sin(frame * 0.013 + p[3])
+            p[0] = (p[0] + (dx + sway) * speed) % ww
+            p[1] = (p[1] + dy * speed) % wh
+            level = int((0.5 + 0.5 * math.sin(frame * 0.035 + p[3] * 3.0)) * top + 0.5)
+            half = halves[layer]
+            blits.append((sprites[layer][level], (ox + p[0] * scale - half, oy + p[1] * scale - half), None,
+                          pygame.BLEND_RGB_ADD))
+        canvas.blits(blits, doreturn=False)
+
+
 class ThermalRenderer:
     """Dark "thermal" look, drawn directly at canvas resolution through the view.
 
@@ -525,11 +595,20 @@ class ThermalRenderer:
 
     MODES = ("art", "data")
 
-    def __init__(self, font: pygame.font.Font, mode: str = "art", trails: bool = True, glow: bool = True):
+    def __init__(
+        self,
+        font: pygame.font.Font,
+        mode: str = "art",
+        trails: bool = True,
+        glow: bool = True,
+        particles: bool = True,
+    ):
         self.font = font
         self.mode = mode
         self.trails = trails
         self.glow = glow
+        self.particles = particles
+        self._particle_field: ParticleField | None = None
         self._sprite_cache: dict[float, FishSprites] = {}
         self._glow_blob_cache: dict[float, GlowBlobs] = {}
         self._glow_buffers: GlowBuffers | None = None
@@ -550,6 +629,9 @@ class ThermalRenderer:
             return True
         if key == pygame.K_g:
             self.glow = not self.glow
+            return True
+        if key == pygame.K_p:
+            self.particles = not self.particles
             return True
         return False
 
@@ -587,6 +669,11 @@ class ThermalRenderer:
                 scene.fill(THERMAL_BACKGROUND)
         canvas.fill(THERMAL_BACKGROUND)
         canvas.set_clip(view.rect)
+        if self.particles:
+            with _stage("thermal.particles"):
+                if self._particle_field is None or self._particle_field.world_size != view.world_size:
+                    self._particle_field = ParticleField(view.world_size)
+                self._particle_field.draw(canvas, view, descriptors.get("mean_speed", 0.0))
         with _stage("thermal.fish"):
             blobs = self._glow_blobs_for(scale) if self.glow else None
             halos, bodies, scene_bodies, glow_blobs = self._fish_blits(

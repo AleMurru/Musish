@@ -130,6 +130,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--no-trails", action="store_true", help="thermal look: start without trails (T toggles)")
     parser.add_argument("--no-glow", action="store_true", help="thermal look: start without glow (G toggles)")
     parser.add_argument(
+        "--no-particles", action="store_true", help="thermal look: start without drifting particles (P toggles)"
+    )
+    parser.add_argument(
         "--size",
         type=parse_size,
         default=(WIDTH, HEIGHT),
@@ -159,7 +162,13 @@ def main(argv: list[str] | None = None) -> None:
     renderer = (
         ClassicRenderer(font)
         if args.classic
-        else ThermalRenderer(font, mode=args.mode, trails=not args.no_trails, glow=not args.no_glow)
+        else ThermalRenderer(
+            font,
+            mode=args.mode,
+            trails=not args.no_trails,
+            glow=not args.no_glow,
+            particles=not args.no_particles,
+        )
     )
 
     controls = RuntimeControls()
