@@ -32,7 +32,7 @@ from aquarium_boids.descriptors import DESCRIPTOR_ORDER, OnePoleSmoother, comput
 from aquarium_boids.markov import LAYERS, SECTIONS, SymbolicGenerator
 from aquarium_boids.midi_in import MidiControllerInput
 from aquarium_boids.osc_io import OscSender
-from aquarium_boids.render import ClassicRenderer, Display
+from aquarium_boids.render import ClassicRenderer, Display, ThermalRenderer
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -119,7 +119,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--classic",
         action="store_true",
-        help="original look (flat background, triangle fish, text HUD); currently the only renderer",
+        help="original look (flat background, triangle fish, text HUD) instead of the thermal look",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=ThermalRenderer.MODES,
+        default="art",
+        help="thermal look: 'art' = no text (default, for recording), 'data' = with HUD; H toggles",
     )
     parser.add_argument(
         "--size",
@@ -148,7 +154,7 @@ def main(argv: list[str] | None = None) -> None:
     display = Display((WIDTH, HEIGHT), args.size, "Aquarium Boids OSC -> Max", fullscreen=args.fullscreen)
     clock = pygame.time.Clock()
     font = pygame.font.SysFont("consolas", 16)
-    renderer = ClassicRenderer(font)
+    renderer = ClassicRenderer(font) if args.classic else ThermalRenderer(font, mode=args.mode)
 
     controls = RuntimeControls()
     flock = create_flock(BOID_COUNT)
@@ -197,6 +203,8 @@ def main(argv: list[str] | None = None) -> None:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_F11:
                     display.toggle_fullscreen()
+                    continue
+                if renderer.handle_key(event.key):
                     continue
                 flock = handle_key(event, controls, flock)
 

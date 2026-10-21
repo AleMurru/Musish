@@ -6,12 +6,31 @@ the simulation and the Markov generator, so any extra call would change the OSC 
 """
 from __future__ import annotations
 
+import math
+import time
+from contextlib import contextmanager
+
 import pygame
 from pygame.math import Vector2
 
 from .boids import Boid
 from .config import BACKGROUND, CONTROL_PORT, OSC_HOST, OSC_PORT, TEXT
 from .controls import RuntimeControls
+
+# Optional per-stage timing: an external profiler may set this to a dict; stays None otherwise.
+STAGE_ACC: dict[str, float] | None = None
+
+
+@contextmanager
+def _stage(name: str):
+    if STAGE_ACC is None:
+        yield
+        return
+    start = time.perf_counter()
+    try:
+        yield
+    finally:
+        STAGE_ACC[name] = STAGE_ACC.get(name, 0.0) + time.perf_counter() - start
 
 
 class View:
@@ -129,6 +148,10 @@ class ClassicRenderer:
         self.font = font
         self._world: pygame.Surface | None = None
 
+    def handle_key(self, key: int) -> bool:
+        """Display keys; the classic look has none (H stays a no-op, as before)."""
+        return False
+
     def draw(
         self,
         canvas: pygame.Surface,
@@ -164,3 +187,69 @@ class ClassicRenderer:
             pygame.draw.circle(surface, (255, 80, 90), repeller, 34, 2)
         for boid in flock:
             boid.draw(surface)
+
+
+THERMAL_BACKGROUND = (0, 0, 0)
+PLACEHOLDER_FISH = (255, 170, 60)  # replaced by heat-mapped sprites in a later commit
+
+
+class ThermalRenderer:
+    """Dark "thermal" look, drawn directly at canvas resolution through the view.
+
+    Modes: "art" (no text, for recording) and "data" (same picture + HUD), toggled with H.
+    """
+
+    MODES = ("art", "data")
+
+    def __init__(self, font: pygame.font.Font, mode: str = "art"):
+        self.font = font
+        self.mode = mode
+
+    def handle_key(self, key: int) -> bool:
+        if key == pygame.K_h:
+            self.mode = "data" if self.mode == "art" else "art"
+            return True
+        return False
+
+    def draw(
+        self,
+        canvas: pygame.Surface,
+        view: View,
+        flock: list[Boid],
+        attractor: Vector2 | None,
+        repeller: Vector2 | None,
+        controls: RuntimeControls,
+        descriptors: dict[str, float],
+    ) -> None:
+        with _stage("thermal.background"):
+            canvas.fill(THERMAL_BACKGROUND)
+        canvas.set_clip(view.rect)
+        scale = view.scale
+        ox, oy = view.rect.topleft
+        with _stage("thermal.fish"):
+            for boid in flock:
+                self._draw_fish(canvas, boid, scale, ox, oy)
+        with _stage("thermal.events"):
+            if attractor is not None:
+                pygame.draw.circle(canvas, (80, 255, 150), (ox + attractor.x * scale, oy + attractor.y * scale), 18 * scale, 2)
+            if repeller is not None:
+                pygame.draw.circle(canvas, (255, 80, 90), (ox + repeller.x * scale, oy + repeller.y * scale), 34 * scale, 2)
+        canvas.set_clip(None)
+        if self.mode == "data":
+            draw_hud(canvas, self.font, controls, descriptors, origin=view.rect.topleft)
+
+    @staticmethod
+    def _draw_fish(canvas: pygame.Surface, boid: Boid, scale: float, ox: int, oy: int) -> None:
+        """Placeholder: the classic triangle in one warm colour (sprites come next)."""
+        heading = math.atan2(boid.velocity.y, boid.velocity.x)
+        cos_h, sin_h = math.cos(heading), math.sin(heading)
+        size = boid.size * scale
+        cx, cy = ox + boid.position.x * scale, oy + boid.position.y * scale
+        points = []
+        for fx, fy in ((1.8, 0.0), (-1.0, 0.75), (-1.0, -0.75)):
+            x, y = fx * size, fy * size
+            points.append((cx + x * cos_h - y * sin_h, cy + x * sin_h + y * cos_h))
+        color = PLACEHOLDER_FISH
+        if boid.flash > 0:
+            color = tuple(min(255, int(c + 140 * boid.flash)) for c in color)
+        pygame.draw.polygon(canvas, color, points)
