@@ -32,7 +32,7 @@ from aquarium_boids.descriptors import DESCRIPTOR_ORDER, OnePoleSmoother, comput
 from aquarium_boids.markov import LAYERS, SECTIONS, SymbolicGenerator
 from aquarium_boids.midi_in import MidiControllerInput
 from aquarium_boids.osc_io import OscSender
-from aquarium_boids.render import ClassicRenderer
+from aquarium_boids.render import ClassicRenderer, Display
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -121,17 +121,34 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="original look (flat background, triangle fish, text HUD); currently the only renderer",
     )
+    parser.add_argument(
+        "--size",
+        type=parse_size,
+        default=(WIDTH, HEIGHT),
+        metavar="WxH",
+        help=f"window size, e.g. 1920x1080 (default {WIDTH}x{HEIGHT}); the simulation stays {WIDTH}x{HEIGHT}",
+    )
+    parser.add_argument("--fullscreen", action="store_true", help="start fullscreen (F11 toggles)")
     return parser.parse_args(argv)
+
+
+def parse_size(text: str) -> tuple[int, int]:
+    try:
+        w, h = (int(part) for part in text.lower().split("x"))
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"expected WxH, e.g. 1920x1080, got {text!r}")
+    if w < 320 or h < 200:
+        raise argparse.ArgumentTypeError("size must be at least 320x200")
+    return (w, h)
 
 
 def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     pygame.init()
-    pygame.display.set_caption("Aquarium Boids OSC -> Max")
-    surface = pygame.display.set_mode((WIDTH, HEIGHT))
+    display = Display((WIDTH, HEIGHT), args.size, "Aquarium Boids OSC -> Max", fullscreen=args.fullscreen)
     clock = pygame.time.Clock()
     font = pygame.font.SysFont("consolas", 16)
-    renderer = ClassicRenderer(surface, font)
+    renderer = ClassicRenderer(font)
 
     controls = RuntimeControls()
     flock = create_flock(BOID_COUNT)
@@ -178,10 +195,13 @@ def main(argv: list[str] | None = None) -> None:
                 pygame.quit()
                 return
             if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_F11:
+                    display.toggle_fullscreen()
+                    continue
                 flock = handle_key(event, controls, flock)
 
         mouse_buttons = pygame.mouse.get_pressed(num_buttons=3)
-        mouse_pos = Vector2(pygame.mouse.get_pos())
+        mouse_pos = display.view.to_world(pygame.mouse.get_pos())
         attractor = mouse_pos if mouse_buttons[0] else None
         repeller = mouse_pos if mouse_buttons[2] else None
         if attractor is None and controls.food_amount > 0.01:
@@ -233,7 +253,7 @@ def main(argv: list[str] | None = None) -> None:
             events_per_second = 0.45 + controls.density_fader * 5.5 + descriptors.get("mean_speed", 0.0) * 2.0
             next_event_time = now + max(0.08, 1.0 / events_per_second)
 
-        renderer.draw(flock, attractor, repeller, controls, descriptors)
+        renderer.draw(display.canvas, display.view, flock, attractor, repeller, controls, descriptors)
         pygame.display.flip()
 
 
