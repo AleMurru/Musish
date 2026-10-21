@@ -190,7 +190,110 @@ class ClassicRenderer:
 
 
 THERMAL_BACKGROUND = (0, 0, 0)
-PLACEHOLDER_FISH = (255, 170, 60)  # replaced by heat-mapped sprites in a later commit
+
+# Fish silhouette, upper half from nose to tail notch, in units of boid.size, pointing +x
+# (mirrored for the lower half). Same overall length as the classic triangle (1.8 .. -1.3).
+FISH_OUTLINE = [
+    (1.8, 0.0), (1.55, 0.26), (1.1, 0.46), (0.5, 0.54), (-0.1, 0.44),
+    (-0.55, 0.2), (-0.8, 0.1), (-1.3, 0.56), (-1.08, 0.0),
+]
+# Thin bright core along the spine (ellipse), in the same units.
+CORE_CENTER, CORE_HALF_LENGTH, CORE_HALF_WIDTH = 0.55, 0.8, 0.18
+HALO_GROWTH = 1.3  # halo extent relative to the body
+HEADINGS = 64
+HEAT_LEVELS = 8
+SIZE_BINS = (6.8, 8.5, 10.2)  # boid.size is uniform 6..11 (boids.py:40)
+SIZE_EDGES = (7.67, 9.33)
+SUPERSAMPLE = 4
+
+# Heat palette (heat = speed / max_speed): colour stops at heat 0, 0.5, 1.
+# Body is blitted with MAX, so overlapping fish never add up. Its blue stays low and the
+# core is dim, so the hottest fish peak around (255, 225, 45): warm yellow, never white.
+BODY_STOPS = ((70, 20, 110), (210, 50, 50), (255, 140, 30))
+CORE_STOPS = ((10, 5, 15), (30, 40, 10), (0, 85, 15))
+# Halo is additive (dense areas glow). Green kept near zero, so piled-up halos saturate
+# toward magenta instead of white.
+HALO_STOPS = ((16, 3, 32), (34, 5, 30), (45, 8, 24))
+
+
+def _lerp_stops(stops: tuple[tuple[int, int, int], ...], t: float) -> tuple[int, int, int]:
+    t = max(0.0, min(1.0, t)) * (len(stops) - 1)
+    i = min(int(t), len(stops) - 2)
+    f = t - i
+    a, b = stops[i], stops[i + 1]
+    return tuple(int(round(a[c] + (b[c] - a[c]) * f)) for c in range(3))
+
+
+def _rotated(points: list[tuple[float, float]], angle: float, scale: float, center: float) -> list[tuple[float, float]]:
+    cos_a, sin_a = math.cos(angle), math.sin(angle)
+    return [(center + (x * cos_a - y * sin_a) * scale, center + (x * sin_a + y * cos_a) * scale) for x, y in points]
+
+
+def _fish_polygon() -> list[tuple[float, float]]:
+    lower = [(x, -y) for x, y in reversed(FISH_OUTLINE[1:-1])]
+    return FISH_OUTLINE + lower
+
+
+def _core_polygon(steps: int = 20) -> list[tuple[float, float]]:
+    return [
+        (CORE_CENTER + CORE_HALF_LENGTH * math.cos(a), CORE_HALF_WIDTH * math.sin(a))
+        for a in (math.tau * i / steps for i in range(steps))
+    ]
+
+
+def _mask(points: list[tuple[float, float]], angle: float, unit: float, side: int, render_side: int) -> pygame.Surface:
+    """White-on-black anti-aliased coverage mask: drawn at render_side, smooth-scaled to side."""
+    k = render_side / side
+    surface = pygame.Surface((render_side, render_side))
+    pygame.draw.polygon(surface, (255, 255, 255), _rotated(points, angle, unit * k, render_side / 2))
+    return pygame.transform.smoothscale(surface, (side, side))
+
+
+def _soft(mask: pygame.Surface, factor: int = 4) -> pygame.Surface:
+    """Cheap blur: average down by `factor`, then bilinear back up."""
+    side = mask.get_width()
+    small = pygame.transform.smoothscale(mask, (max(2, side // factor), max(2, side // factor)))
+    return pygame.transform.smoothscale(small, (side, side))
+
+
+class FishSprites:
+    """Pre-rendered fish for one view scale: [size_bin][heat_level][heading] -> Surface."""
+
+    def __init__(self, scale: float):
+        fish = _fish_polygon()
+        core = _core_polygon()
+        halo = [(x * HALO_GROWTH, y * HALO_GROWTH * 1.4) for x, y in fish]
+        body_colors = [_lerp_stops(BODY_STOPS, (h + 0.5) / HEAT_LEVELS) for h in range(HEAT_LEVELS)]
+        core_colors = [_lerp_stops(CORE_STOPS, (h + 0.5) / HEAT_LEVELS) for h in range(HEAT_LEVELS)]
+        halo_colors = [_lerp_stops(HALO_STOPS, (h + 0.5) / HEAT_LEVELS) for h in range(HEAT_LEVELS)]
+
+        self.half: list[int] = []
+        self.body: list[list[list[pygame.Surface]]] = []
+        self.halo: list[list[list[pygame.Surface]]] = []
+        for size in SIZE_BINS:
+            unit = size * scale
+            half = int(math.ceil(1.85 * HALO_GROWTH * unit)) + 2
+            side = 2 * half
+            self.half.append(half)
+            body_by_heat = [[] for _ in range(HEAT_LEVELS)]
+            halo_by_heat = [[] for _ in range(HEAT_LEVELS)]
+            for k in range(HEADINGS):
+                angle = math.tau * k / HEADINGS
+                body_mask = _mask(fish, angle, unit, side, side * SUPERSAMPLE)
+                core_mask = _mask(core, angle, unit, side, side * SUPERSAMPLE)
+                halo_mask = _soft(_mask(halo, angle, unit, side, side * 2))
+                for h in range(HEAT_LEVELS):
+                    body = body_mask.copy()
+                    body.fill(body_colors[h], special_flags=pygame.BLEND_RGB_MULT)
+                    tinted_core = core_mask.copy()
+                    tinted_core.fill(core_colors[h], special_flags=pygame.BLEND_RGB_MULT)
+                    body.blit(tinted_core, (0, 0), special_flags=pygame.BLEND_RGB_ADD)
+                    glow = halo_mask.copy()
+                    glow.fill(halo_colors[h], special_flags=pygame.BLEND_RGB_MULT)
+                    body_by_heat[h].append(body.convert())
+                    halo_by_heat[h].append(glow.convert())
+            self.body.append(body_by_heat)
+            self.halo.append(halo_by_heat)
 
 
 class ThermalRenderer:
@@ -204,6 +307,7 @@ class ThermalRenderer:
     def __init__(self, font: pygame.font.Font, mode: str = "art"):
         self.font = font
         self.mode = mode
+        self._sprite_cache: dict[float, FishSprites] = {}
 
     def handle_key(self, key: int) -> bool:
         if key == pygame.K_h:
@@ -227,8 +331,7 @@ class ThermalRenderer:
         scale = view.scale
         ox, oy = view.rect.topleft
         with _stage("thermal.fish"):
-            for boid in flock:
-                self._draw_fish(canvas, boid, scale, ox, oy)
+            self._draw_fish(canvas, flock, self._sprites_for(scale), scale, ox, oy)
         with _stage("thermal.events"):
             if attractor is not None:
                 pygame.draw.circle(canvas, (80, 255, 150), (ox + attractor.x * scale, oy + attractor.y * scale), 18 * scale, 2)
@@ -238,18 +341,35 @@ class ThermalRenderer:
         if self.mode == "data":
             draw_hud(canvas, self.font, controls, descriptors, origin=view.rect.topleft)
 
+    def _sprites_for(self, scale: float) -> FishSprites:
+        key = round(scale, 4)
+        sprites = self._sprite_cache.get(key)
+        if sprites is None:
+            sprites = FishSprites(scale)
+            self._sprite_cache[key] = sprites
+        return sprites
+
     @staticmethod
-    def _draw_fish(canvas: pygame.Surface, boid: Boid, scale: float, ox: int, oy: int) -> None:
-        """Placeholder: the classic triangle in one warm colour (sprites come next)."""
-        heading = math.atan2(boid.velocity.y, boid.velocity.x)
-        cos_h, sin_h = math.cos(heading), math.sin(heading)
-        size = boid.size * scale
-        cx, cy = ox + boid.position.x * scale, oy + boid.position.y * scale
-        points = []
-        for fx, fy in ((1.8, 0.0), (-1.0, 0.75), (-1.0, -0.75)):
-            x, y = fx * size, fy * size
-            points.append((cx + x * cos_h - y * sin_h, cy + x * sin_h + y * cos_h))
-        color = PLACEHOLDER_FISH
-        if boid.flash > 0:
-            color = tuple(min(255, int(c + 140 * boid.flash)) for c in color)
-        pygame.draw.polygon(canvas, color, points)
+    def _draw_fish(
+        canvas: pygame.Surface,
+        flock: list[Boid],
+        sprites: FishSprites,
+        scale: float,
+        ox: int,
+        oy: int,
+    ) -> None:
+        """Halos first (additive: dense areas glow), then bodies (MAX: overlaps never sum)."""
+        halos = []
+        bodies = []
+        for boid in flock:
+            velocity = boid.velocity
+            heat = min(1.0, velocity.length() / boid.max_speed + 0.6 * boid.flash)
+            heat_i = min(HEAT_LEVELS - 1, int(heat * HEAT_LEVELS))
+            heading_i = round(math.atan2(velocity.y, velocity.x) * HEADINGS / math.tau) % HEADINGS
+            size_i = 0 if boid.size < SIZE_EDGES[0] else (1 if boid.size < SIZE_EDGES[1] else 2)
+            half = sprites.half[size_i]
+            pos = (ox + boid.position.x * scale - half, oy + boid.position.y * scale - half)
+            halos.append((sprites.halo[size_i][heat_i][heading_i], pos, None, pygame.BLEND_RGB_ADD))
+            bodies.append((sprites.body[size_i][heat_i][heading_i], pos, None, pygame.BLEND_RGB_MAX))
+        canvas.blits(halos, doreturn=False)
+        canvas.blits(bodies, doreturn=False)
