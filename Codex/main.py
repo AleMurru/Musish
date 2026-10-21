@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import csv
 import random
 import sys
@@ -11,7 +12,6 @@ from pygame.math import Vector2
 
 from aquarium_boids.boids import Boid
 from aquarium_boids.config import (
-    BACKGROUND,
     BOID_COUNT,
     BPM,
     CONTROL_PORT,
@@ -24,7 +24,6 @@ from aquarium_boids.config import (
     OSC_HOST,
     OSC_PORT,
     SEND_DESCRIPTOR_HZ,
-    TEXT,
     WIDTH,
 )
 from aquarium_boids.control_in import ControlReceiver
@@ -33,6 +32,7 @@ from aquarium_boids.descriptors import DESCRIPTOR_ORDER, OnePoleSmoother, comput
 from aquarium_boids.markov import LAYERS, SECTIONS, SymbolicGenerator
 from aquarium_boids.midi_in import MidiControllerInput
 from aquarium_boids.osc_io import OscSender
+from aquarium_boids.render import ClassicRenderer
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -114,30 +114,24 @@ def handle_key(event: pygame.event.Event, controls: RuntimeControls, flock: list
     return flock
 
 
-def draw_hud(surface: pygame.Surface, font: pygame.font.Font, controls: RuntimeControls, descriptors: dict[str, float]) -> None:
-    lines = [
-        "Acquario / Boids -> Max | MIDIMIX direct + Max control ready",
-        f"density_fader UP/DOWN: {controls.density_fader:.2f} | section 1-6: {controls.section_name}",
-        f"A/Z align {controls.alignment_weight:.2f} | S/X cohesion {controls.cohesion_weight:.2f} | D/C separation {controls.separation_weight:.2f} | N/M noise {controls.noise_weight:.2f}",
-        f"food_amount {controls.food_amount:.2f} | predator_amount {controls.predator_amount:.2f} | mouse food/pred {controls.food_strength:.2f}/{controls.predator_strength:.2f}",
-        f"fish -/= : {controls.population} (fish_count {descriptors.get('fish_count', 0):.2f}) -> granular density",
-        "Mouse left = food/attractor | mouse right = predator/repeller | SPACE pause | R reset",
-        f"OSC out: {OSC_HOST}:{OSC_PORT} | plain out: 7401 | control in: {CONTROL_PORT}",
-        f"mean_speed {descriptors.get('mean_speed', 0):.2f} | density {descriptors.get('density', 0):.2f} | spread {descriptors.get('spread', 0):.2f} | coherence {descriptors.get('direction_coherence', 0):.2f}",
-    ]
-    y = 10
-    for line in lines:
-        img = font.render(line, True, TEXT)
-        surface.blit(img, (12, y))
-        y += 20
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Aquarium boids -> OSC -> Max")
+    parser.add_argument(
+        "--classic",
+        action="store_true",
+        help="original look (flat background, triangle fish, text HUD); currently the only renderer",
+    )
+    return parser.parse_args(argv)
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
+    args = parse_args(argv)
     pygame.init()
     pygame.display.set_caption("Aquarium Boids OSC -> Max")
     surface = pygame.display.set_mode((WIDTH, HEIGHT))
     clock = pygame.time.Clock()
     font = pygame.font.SysFont("consolas", 16)
+    renderer = ClassicRenderer(surface, font)
 
     controls = RuntimeControls()
     flock = create_flock(BOID_COUNT)
@@ -239,14 +233,7 @@ def main() -> None:
             events_per_second = 0.45 + controls.density_fader * 5.5 + descriptors.get("mean_speed", 0.0) * 2.0
             next_event_time = now + max(0.08, 1.0 / events_per_second)
 
-        surface.fill(BACKGROUND)
-        if attractor is not None:
-            pygame.draw.circle(surface, (80, 255, 150), attractor, 18, 2)
-        if repeller is not None:
-            pygame.draw.circle(surface, (255, 80, 90), repeller, 34, 2)
-        for boid in flock:
-            boid.draw(surface)
-        draw_hud(surface, font, controls, descriptors)
+        renderer.draw(flock, attractor, repeller, controls, descriptors)
         pygame.display.flip()
 
 
