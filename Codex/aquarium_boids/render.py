@@ -225,9 +225,91 @@ TRAIL_ENERGY_FULL = 0.45  # energy at which trails reach full length (live logs:
 TRAIL_FLOOR = 2
 
 
+def energy_level(energy: float) -> float:
+    """Flock energy (agitation descriptor) mapped to 0..1 for visual intensity."""
+    return max(0.0, min(1.0, energy / TRAIL_ENERGY_FULL))
+
+
 def trail_fade(energy: float) -> int:
-    t = max(0.0, min(1.0, energy / TRAIL_ENERGY_FULL))
+    t = energy_level(energy)
     return int(round(TRAIL_FADE_CALM + (TRAIL_FADE_AGITATED - TRAIL_FADE_CALM) * t))
+
+
+# Glow: drawn directly at 1/GLOW_DOWNSCALE resolution (one pre-blurred blob per fish into a
+# small fading buffer), never by shrinking the full frame (that read alone costs ~2 ms).
+# Then gain (flock energy) and a MIN cap at low resolution, smooth upscale to 1/2,
+# nearest x2 to full size, added on top. The cap keeps dense clusters from turning white.
+GLOW_DOWNSCALE = 4
+GLOW_RADIUS = 2.6  # blob radius in units of the mean boid.size
+GLOW_STOPS = ((40, 6, 34), (110, 16, 22), (150, 28, 10))  # by heat; green kept low
+GLOW_GAIN_CALM = 0.35
+GLOW_GAIN_AGITATED = 1.0
+GLOW_CAP = (170, 30, 70)
+
+
+def glow_gain(energy: float) -> int:
+    t = energy_level(energy)
+    return int(round(255 * (GLOW_GAIN_CALM + (GLOW_GAIN_AGITATED - GLOW_GAIN_CALM) * t)))
+
+
+class GlowBlobs:
+    """Soft round blobs per heat level, sized for the low-resolution glow buffer."""
+
+    def __init__(self, scale: float):
+        radius = GLOW_RADIUS * (sum(SIZE_BINS) / len(SIZE_BINS)) * scale / GLOW_DOWNSCALE
+        self.half = int(math.ceil(radius * 1.6)) + 1
+        side = 2 * self.half
+        mask = pygame.Surface((side * 4, side * 4))
+        pygame.draw.circle(mask, (255, 255, 255), (side * 2, side * 2), radius * 4)
+        mask = _soft(_soft(pygame.transform.smoothscale(mask, (side, side)), 2), 2)
+        self.blobs: list[pygame.Surface] = []
+        for h in range(HEAT_LEVELS):
+            blob = mask.copy()
+            blob.fill(_lerp_stops(GLOW_STOPS, (h + 0.5) / HEAT_LEVELS), special_flags=pygame.BLEND_RGB_MULT)
+            self.blobs.append(blob.convert())
+
+
+class GlowBuffers:
+    """Low-resolution glow pipeline for one view size; `output` is the full-size result."""
+
+    def __init__(self, view_size: tuple[int, int]):
+        self.view_size = view_size
+        vw, vh = view_size
+        small_size = (max(1, vw // GLOW_DOWNSCALE), max(1, vh // GLOW_DOWNSCALE))
+        self.small = pygame.Surface(small_size).convert()  # persistent: fades like the trails
+        self.small.fill(THERMAL_BACKGROUND)
+        self.work = self.small.copy()
+        self.fade = self.small.copy()
+        self.fade_value = -1
+        self.floor = self.small.copy()
+        self.floor.fill((TRAIL_FLOOR,) * 3)
+        self.gain = self.small.copy()
+        self.gain_value = -1
+        self.cap = self.small.copy()
+        self.cap.fill(GLOW_CAP)
+        self.mid = pygame.Surface((max(1, vw // 2), max(1, vh // 2))).convert()
+        self.output = pygame.Surface(view_size).convert()
+
+    def update(self, blob_blits: list, fade: int | None, gain: int) -> None:
+        small, work = self.small, self.work
+        if fade is None:
+            small.fill(THERMAL_BACKGROUND)
+        else:
+            if fade != self.fade_value:
+                self.fade.fill((fade, fade, fade))
+                self.fade_value = fade
+            small.blit(self.fade, (0, 0), special_flags=pygame.BLEND_RGB_MULT)
+            small.blit(self.floor, (0, 0), special_flags=pygame.BLEND_RGB_SUB)
+        # MAX, not ADD: lingering fish do not pile up in the fading buffer.
+        small.blits(blob_blits, doreturn=False)
+        work.blit(small, (0, 0))
+        if gain != self.gain_value:
+            self.gain.fill((gain, gain, gain))
+            self.gain_value = gain
+        work.blit(self.gain, (0, 0), special_flags=pygame.BLEND_RGB_MULT)
+        work.blit(self.cap, (0, 0), special_flags=pygame.BLEND_RGB_MIN)
+        pygame.transform.smoothscale(work, self.mid.get_size(), self.mid)
+        pygame.transform.scale(self.mid, self.view_size, self.output)
 
 
 def _lerp_stops(stops: tuple[tuple[int, int, int], ...], t: float) -> tuple[int, int, int]:
@@ -318,11 +400,14 @@ class ThermalRenderer:
 
     MODES = ("art", "data")
 
-    def __init__(self, font: pygame.font.Font, mode: str = "art", trails: bool = True):
+    def __init__(self, font: pygame.font.Font, mode: str = "art", trails: bool = True, glow: bool = True):
         self.font = font
         self.mode = mode
         self.trails = trails
+        self.glow = glow
         self._sprite_cache: dict[float, FishSprites] = {}
+        self._glow_blob_cache: dict[float, GlowBlobs] = {}
+        self._glow_buffers: GlowBuffers | None = None
         # Persistent picture of the world area: faded each frame instead of cleared (trails).
         # Only fish go in here; rings and HUD are drawn on the canvas so they never smear.
         self._scene: pygame.Surface | None = None
@@ -336,6 +421,9 @@ class ThermalRenderer:
             return True
         if key == pygame.K_t:
             self.trails = not self.trails
+            return True
+        if key == pygame.K_g:
+            self.glow = not self.glow
             return True
         return False
 
@@ -374,7 +462,10 @@ class ThermalRenderer:
         canvas.fill(THERMAL_BACKGROUND)
         canvas.set_clip(view.rect)
         with _stage("thermal.fish"):
-            halos, bodies, scene_bodies = self._fish_blits(flock, self._sprites_for(scale), scale, ox, oy)
+            blobs = self._glow_blobs_for(scale) if self.glow else None
+            halos, bodies, scene_bodies, glow_blobs = self._fish_blits(
+                flock, self._sprites_for(scale), blobs, scale, ox, oy
+            )
             canvas.blits(halos, doreturn=False)
         with _stage("thermal.compose"):
             # The scene holds only the past (faded). MAX keeps every pixel at
@@ -386,6 +477,14 @@ class ThermalRenderer:
                 # Trails hold bodies only, with MAX: however long the trail, a pixel never gets
                 # brighter than one sprite (additive halos in a fading buffer would pile up).
                 scene.blits(scene_bodies, doreturn=False)
+        if self.glow:
+            with _stage("thermal.glow"):
+                buffers = self._glow_buffers
+                if buffers is None or buffers.view_size != view.rect.size:
+                    buffers = self._glow_buffers = GlowBuffers(view.rect.size)
+                energy = descriptors.get("energy", 0.0)
+                buffers.update(glow_blobs, trail_fade(energy) if self.trails else None, glow_gain(energy))
+                canvas.blit(buffers.output, view.rect.topleft, special_flags=pygame.BLEND_RGB_ADD)
         with _stage("thermal.events"):
             if attractor is not None:
                 pygame.draw.circle(canvas, (80, 255, 150), (ox + attractor.x * scale, oy + attractor.y * scale), 18 * scale, 2)
@@ -403,21 +502,33 @@ class ThermalRenderer:
             self._sprite_cache[key] = sprites
         return sprites
 
+    def _glow_blobs_for(self, scale: float) -> GlowBlobs:
+        key = round(scale, 4)
+        blobs = self._glow_blob_cache.get(key)
+        if blobs is None:
+            blobs = GlowBlobs(scale)
+            self._glow_blob_cache[key] = blobs
+        return blobs
+
     @staticmethod
     def _fish_blits(
         flock: list[Boid],
         sprites: FishSprites,
+        blobs: GlowBlobs | None,
         scale: float,
         ox: int,
         oy: int,
-    ) -> tuple[list, list, list]:
-        """Blit lists: halos (additive, canvas), bodies (MAX, canvas), bodies (MAX, scene).
+    ) -> tuple[list, list, list, list]:
+        """Blit lists: halos (additive, canvas), bodies (MAX, canvas), bodies (MAX, scene),
+        glow blobs (MAX, low-resolution glow buffer).
 
         Halos go first so dense areas glow; bodies use MAX so overlapping fish never sum.
         """
         halos = []
         bodies = []
         scene_bodies = []
+        glow = []
+        glow_scale = scale / GLOW_DOWNSCALE
         for boid in flock:
             velocity = boid.velocity
             heat = min(1.0, velocity.length() / boid.max_speed + 0.6 * boid.flash)
@@ -431,4 +542,11 @@ class ThermalRenderer:
             halos.append((sprites.halo[size_i][heat_i][heading_i], (ox + x, oy + y), None, pygame.BLEND_RGB_ADD))
             bodies.append((body, (ox + x, oy + y), None, pygame.BLEND_RGB_MAX))
             scene_bodies.append((body, (x, y), None, pygame.BLEND_RGB_MAX))
-        return halos, bodies, scene_bodies
+            if blobs is not None:
+                glow.append((
+                    blobs.blobs[heat_i],
+                    (boid.position.x * glow_scale - blobs.half, boid.position.y * glow_scale - blobs.half),
+                    None,
+                    pygame.BLEND_RGB_MAX,
+                ))
+        return halos, bodies, scene_bodies, glow

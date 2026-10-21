@@ -128,6 +128,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="thermal look: 'art' = no text (default, for recording), 'data' = with HUD; H toggles",
     )
     parser.add_argument("--no-trails", action="store_true", help="thermal look: start without trails (T toggles)")
+    parser.add_argument("--no-glow", action="store_true", help="thermal look: start without glow (G toggles)")
     parser.add_argument(
         "--size",
         type=parse_size,
@@ -158,7 +159,7 @@ def main(argv: list[str] | None = None) -> None:
     renderer = (
         ClassicRenderer(font)
         if args.classic
-        else ThermalRenderer(font, mode=args.mode, trails=not args.no_trails)
+        else ThermalRenderer(font, mode=args.mode, trails=not args.no_trails, glow=not args.no_glow)
     )
 
     controls = RuntimeControls()
