@@ -119,6 +119,25 @@ class OscSender:
         self.client.send_message("/plaud/temp", temp)
         return (x, y)
 
+    def send_fx_predator(self, active: bool) -> None:
+        """Predator scare onset (1) / release (0), sent on change, not rate-limited.
+
+          /fx/predator  int 1|0
+        """
+        self.client.send_message("/fx/predator", 1 if active else 0)
+
+    def send_fx_predator_strength(self, controls: RuntimeControls) -> float:
+        """Predator strength while the scare is active, at the descriptor rate.
+
+        Same force the boids feel (boids.py:136): predator_amount if > 0, else the
+        mouse predator_strength; both 0..3, scaled here to 0..1.
+          /fx/predator_strength  float 0..1
+        """
+        amount = controls.predator_amount if controls.predator_amount > 0.0 else controls.predator_strength
+        strength = max(0.0, min(1.0, amount / 3.0))
+        self.client.send_message("/fx/predator_strength", strength)
+        return strength
+
     def send_music_event(self, event: MusicEvent) -> None:
         self.client.send_message("/music/event", event.osc_payload())
         self._send_plain("event", event.osc_payload())

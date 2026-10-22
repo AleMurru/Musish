@@ -198,6 +198,7 @@ def main(argv: list[str] | None = None) -> None:
     descriptors: dict[str, float] = {}
     gran = [0.0, 0.0, 1, 0.0]
     plaud_xy = (0.0, 0.0)
+    predator_active = False
 
     while True:
         dt = clock.tick(FPS) / (1000.0 / FPS)
@@ -232,6 +233,13 @@ def main(argv: list[str] | None = None) -> None:
         if repeller is None and controls.predator_amount > 0.01:
             repeller = Vector2(WIDTH * 0.5, HEIGHT * 0.5)
 
+        # Predator scare onset/release for Max: the same state the boids react to (repeller set).
+        if (repeller is not None) != predator_active:
+            predator_active = repeller is not None
+            if predator_active:
+                osc.send_fx_predator_strength(controls)  # so Max has the strength before the first kick
+            osc.send_fx_predator(predator_active)
+
         flock = resize_flock(flock, controls.population)
 
         if not controls.paused:
@@ -248,6 +256,8 @@ def main(argv: list[str] | None = None) -> None:
             osc.send_direct_mapping(descriptors, controls)
             gran = osc.send_granular(descriptors, controls)
             plaud_xy = osc.send_plaud(descriptors)
+            if predator_active:
+                osc.send_fx_predator_strength(controls)
             last_descriptor_send = now
 
         # Clean terminal readout: granular controls + PLAUD latent point (~2x/sec).
