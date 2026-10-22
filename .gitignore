@@ -24,6 +24,14 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Audio, models and Max for Live devices are never shipped (licensing / size)
+*.wav
+*.aif
+*.aiff
+*.ts
+*.ckpt
+*.amxd
+
 # Max backups/autosaves
 *.bak
 *.maxpat~
