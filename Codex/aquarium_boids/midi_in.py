@@ -150,11 +150,17 @@ class MidiControllerInput:
                 if pad is not None:
                     self._pending_pads.append(pad)
                     if self.debug:
-                        print(f"[midi] program={cc} channel={channel} -> pad {pad}")
+                        print(f"[pad] {pad}  (program {cc}, channel {channel})")
+                elif self.debug:
+                    print(f"[midi] program={cc} channel={channel}: not a pad in profile {self.profile_name}")
                 continue
 
             # MIDI CC messages are 0xB0..0xBF.
             if message_type != 0xB0:
+                if self.debug and message_type in (0x80, 0x90):
+                    state = "on" if message_type == 0x90 and value > 0 else "off"
+                    print(f"[midi] note {state} {cc} velocity={value} channel={channel}: ignored "
+                          f"(pads act only as Program Change)")
                 continue
 
             if self.debug and self._seen_values.get(cc) != value:

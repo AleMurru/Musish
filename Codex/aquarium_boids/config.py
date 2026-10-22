@@ -35,7 +35,7 @@ MIDI_CC_MAPPING = {
 # CC 16..23 on channel 1; pads 1..8 send Program Change 16..23 on channel 10.
 MIDI_CC_MAPPING_MPK = {
     16: ("noise_weight", 0.0, 1.5, False),       # K1 -> agitation (range as MIDIMIX fader 4)
-    17: ("alignment_weight", 0.0, 3.0, False),   # K2 -> alignment
+    17: ("/mix/grain_ms", 10.0, 400.0, False),   # K2 -> Max granulator grain length (ms); alignment stays 1.0
     18: ("cohesion_weight", 0.0, 3.0, False),    # K3 -> cohesion (as MIDIMIX fader 2)
     19: ("population", 1.0, 100.0, True),        # K4 -> number of fish (as MIDIMIX fader 1)
     20: ("predator_amount", 0.0, 3.0, False),    # K5 -> centre predator (as MIDIMIX fader 6)

@@ -222,7 +222,6 @@ def main(argv: list[str] | None = None) -> None:
                 osc.send_mix(command.parameter, command.scaled_value)
 
         for pad in midi_input.take_pads():  # only controllers whose profile defines pads (MPK)
-            print(f"[pad] {pad}")
             if pad == 1:
                 osc.send_pad_kick()
             elif pad == 2:  # predator at the centre for a moment: same path as the mouse right button
