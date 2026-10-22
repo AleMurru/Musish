@@ -214,9 +214,12 @@ def main(argv: list[str] | None = None) -> None:
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                osc.send_fx_predator(False)  # never leave Max in a predator scare
                 pygame.quit()
                 return
             if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    osc.send_fx_predator(False)  # handle_key quits on ESC
                 if event.key == pygame.K_F11:
                     display.toggle_fullscreen()
                     continue
