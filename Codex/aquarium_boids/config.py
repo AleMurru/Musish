@@ -33,6 +33,7 @@ FPS = 60
 BOID_COUNT = 100
 
 SEND_DESCRIPTOR_HZ = 20
+GRAN_MAX_VOICES = 32  # /gran/fish_x carries at most this many fish (Max uses its own N <= this)
 BPM = 120
 ROOT_MIDI = 57  # A minor by default
 SCALE_INTERVALS = [0, 2, 3, 5, 7, 8, 10]

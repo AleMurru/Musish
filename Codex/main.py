@@ -17,6 +17,7 @@ from aquarium_boids.config import (
     CONTROL_PORT,
     ENABLE_MIDI_INPUT,
     FPS,
+    GRAN_MAX_VOICES,
     HEIGHT,
     MIDI_CC_MAPPING,
     MIDI_DEBUG,
@@ -261,6 +262,7 @@ def main(argv: list[str] | None = None) -> None:
             plaud_xy = osc.send_plaud(descriptors)
             if predator_active:
                 osc.send_fx_predator_strength(controls)
+            osc.send_fish_x(flock, WIDTH, GRAN_MAX_VOICES)
             last_descriptor_send = now
 
         # Clean terminal readout: granular controls + PLAUD latent point (~2x/sec).

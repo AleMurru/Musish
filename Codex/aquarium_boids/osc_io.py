@@ -138,6 +138,18 @@ class OscSender:
         self.client.send_message("/fx/predator_strength", strength)
         return strength
 
+    def send_fish_x(self, flock: list, width: float, max_voices: int) -> int:
+        """Per-fish horizontal position for a granulator with one grain voice per fish.
+
+        Raw x / width of the first max_voices fish, in flock order (voice i = fish i:
+        resize_flock trims from the end and appends at the end). The list length is the
+        number of fish, up to max_voices; Max decides how many voices it actually uses.
+          /gran/fish_x  list of floats 0..1
+        """
+        xs = [max(0.0, min(1.0, boid.position.x / width)) for boid in flock[:max_voices]]
+        self.client.send_message("/gran/fish_x", xs)
+        return len(xs)
+
     def send_music_event(self, event: MusicEvent) -> None:
         self.client.send_message("/music/event", event.osc_payload())
         self._send_plain("event", event.osc_payload())
