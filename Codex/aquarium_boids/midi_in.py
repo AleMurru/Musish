@@ -15,11 +15,17 @@ class MidiAppliedControl:
 
 
 class MidiControllerInput:
-    """Direct MIDI CC input for MIDIMIX -> Python -> Max workflow.
+    """Direct MIDI input for the controller -> Python -> Max workflow.
 
     Uses pygame.midi to avoid adding a new dependency. The device is optional:
     if no MIDI input is available, the project continues with keyboard/mouse and
     Max UDP controls.
+
+    Profiles: after a device is opened, the first profile whose key is contained in
+    the device name (case-insensitive) replaces the default CC mapping and adds
+    Program Change pads. Any other device keeps the default mapping (MIDIMIX).
+    Mapping entries whose parameter starts with "/" are not simulation controls:
+    they are returned to the caller (an OSC address for Max) and not applied.
     """
 
     def __init__(
@@ -27,13 +33,19 @@ class MidiControllerInput:
         device_name: str = "MIDIMIX",
         mapping: dict[int, tuple[str, float, float, bool]] | None = None,
         debug: bool = True,
+        profiles: dict[str, tuple[dict[int, tuple[str, float, float, bool]], dict[int, int]]] | None = None,
     ):
         self.device_name = device_name.lower()
         self.mapping = mapping or {}
         self.debug = debug
+        self.profiles = profiles or {}
+        self.profile_name = "none (MIDI input not started)"
+        self.pc_pads: dict[int, int] = {}  # Program Change number -> pad number
+        self._pending_pads: list[int] = []
         self.enabled = False
         self.device_id: int | None = None
         self.device_label = "no MIDI input"
+        self._device_name_found = ""
         self._pygame_midi: Any = None
         self._input: Any = None
         self._seen_values: dict[int, int] = {}
@@ -50,6 +62,7 @@ class MidiControllerInput:
         pygame_midi.init()
         self.device_id = self._find_device_id(pygame_midi)
         if self.device_id is None:
+            self.profile_name = "none (no MIDI input)"
             print("[midi] no MIDI input device found; keyboard/Max UDP controls remain active")
             return
 
@@ -57,13 +70,30 @@ class MidiControllerInput:
             self._input = pygame_midi.Input(self.device_id)
         except Exception as exc:  # pragma: no cover - hardware dependent
             self.device_label = f"could not open MIDI input {self.device_id}: {exc}"
+            self.profile_name = "none (MIDI input could not be opened)"
             print(f"[midi] {self.device_label}")
             return
 
         self.enabled = True
+        self._select_profile()
         print(f"[midi] listening to {self.device_label}")
         if self.debug:
-            print("[midi] debug enabled: move MIDIMIX faders to print CC/value")
+            print("[midi] debug enabled: move controls to print CC/value (and Program Change)")
+
+    def _select_profile(self) -> None:
+        name = self._device_name_found.lower()
+        for key, (mapping, pads) in self.profiles.items():
+            if key.lower() in name:
+                self.mapping = mapping
+                self.pc_pads = pads
+                self.profile_name = key
+                return
+        self.profile_name = "MIDIMIX (default mapping)"
+
+    def take_pads(self) -> list[int]:
+        """Pads (1..8) pressed since the last call, in order."""
+        pads, self._pending_pads = self._pending_pads, []
+        return pads
 
     def stop(self) -> None:
         if self._input is not None:
@@ -89,11 +119,13 @@ class MidiControllerInput:
                     fallback = device_id
                 if self.device_name and self.device_name in label.lower():
                     self.device_label = f"{label} [{device_id}]"
+                    self._device_name_found = label
                     return device_id
         if fallback is not None:
             info = pygame_midi.get_device_info(fallback)
             label = info[1].decode(errors="ignore") if isinstance(info[1], bytes) else str(info[1])
             self.device_label = f"{label} [{fallback}] fallback"
+            self._device_name_found = label
         return fallback
 
     def poll(self, controls: RuntimeControls, max_events: int = 64) -> list[MidiAppliedControl]:
@@ -111,6 +143,15 @@ class MidiControllerInput:
             value = int(data[2])
             message_type = status & 0xF0
             channel = (status & 0x0F) + 1
+
+            # Program Change 0xC0..0xCF: pads, only for profiles that define them.
+            if message_type == 0xC0:
+                pad = self.pc_pads.get(cc)  # data[1] is the program number
+                if pad is not None:
+                    self._pending_pads.append(pad)
+                    if self.debug:
+                        print(f"[midi] program={cc} channel={channel} -> pad {pad}")
+                continue
 
             # MIDI CC messages are 0xB0..0xBF.
             if message_type != 0xB0:
@@ -131,7 +172,8 @@ class MidiControllerInput:
             else:
                 scaled_value = float(scaled)
 
-            apply_parameter(controls, parameter, scaled_value)
+            if not parameter.startswith("/"):  # "/..." = OSC address for Max, handled by the caller
+                apply_parameter(controls, parameter, scaled_value)
             applied.append(MidiAppliedControl(cc, value, parameter, scaled_value))
         return applied
 

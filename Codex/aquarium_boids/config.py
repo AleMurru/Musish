@@ -27,6 +27,28 @@ MIDI_CC_MAPPING = {
     61: ("section_id", 0.0, 5.0, True),          # fader 8 -> musical section
 }
 
+# Controller profiles, chosen by the name of the MIDI input actually opened (substring,
+# case-insensitive). Any other device, including the MIDIMIX, uses MIDI_CC_MAPPING above.
+# A parameter starting with "/" is not a simulation control: it is sent to Max as an OSC
+# message (address, scaled value) whenever the knob moves.
+# AKAI MPK mini 3 (measured with the MIDI monitor, current program): knobs K1..K8 send
+# CC 16..23 on channel 1; pads 1..8 send Program Change 16..23 on channel 10.
+MIDI_CC_MAPPING_MPK = {
+    16: ("noise_weight", 0.0, 1.5, False),       # K1 -> agitation (range as MIDIMIX fader 4)
+    17: ("alignment_weight", 0.0, 3.0, False),   # K2 -> alignment
+    18: ("cohesion_weight", 0.0, 3.0, False),    # K3 -> cohesion (as MIDIMIX fader 2)
+    19: ("population", 1.0, 100.0, True),        # K4 -> number of fish (as MIDIMIX fader 1)
+    20: ("predator_amount", 0.0, 3.0, False),    # K5 -> centre predator (as MIDIMIX fader 6)
+    21: ("/mix/gran_gain", 0.0, 1.0, False),     # K6 -> Max granulator gain
+    22: ("/mix/kick_gain", 0.0, 1.0, False),     # K7 -> Max kick gain
+    23: ("/mix/master", 0.0, 1.0, False),        # K8 -> Max master
+}
+MIDI_PC_PADS_MPK = {16 + i: i + 1 for i in range(8)}  # Program Change 16..23 -> pad 1..8
+MIDI_PROFILES = {
+    "MPK": (MIDI_CC_MAPPING_MPK, MIDI_PC_PADS_MPK),
+}
+PAD_PREDATOR_BURST_S = 1.0  # pad 2: predator at the centre for this long
+
 WIDTH = 1200
 HEIGHT = 750
 FPS = 60

@@ -150,6 +150,21 @@ class OscSender:
         self.client.send_message("/gran/fish_x", xs)
         return len(xs)
 
+    def send_mix(self, address: str, value: float) -> None:
+        """Mix levels for Max from controller knobs, sent when the knob moves.
+
+          /mix/gran_gain, /mix/kick_gain, /mix/master  float 0..1
+        """
+        self.client.send_message(address, float(value))
+
+    def send_pad_kick(self) -> None:
+        """Pad 1: one kick now.  /pad/kick  (no arguments)"""
+        self.client.send_message("/pad/kick", [])
+
+    def send_pad_sample(self, n: int) -> None:
+        """Pads 5..8: trigger sample n.  /pad/sample  int 1..4"""
+        self.client.send_message("/pad/sample", int(n))
+
     def send_music_event(self, event: MusicEvent) -> None:
         self.client.send_message("/music/event", event.osc_payload())
         self._send_plain("event", event.osc_payload())

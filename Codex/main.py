@@ -22,8 +22,10 @@ from aquarium_boids.config import (
     MIDI_CC_MAPPING,
     MIDI_DEBUG,
     MIDI_INPUT_NAME,
+    MIDI_PROFILES,
     OSC_HOST,
     OSC_PORT,
+    PAD_PREDATOR_BURST_S,
     SEND_DESCRIPTOR_HZ,
     WIDTH,
 )
@@ -185,9 +187,11 @@ def main(argv: list[str] | None = None) -> None:
         device_name=MIDI_INPUT_NAME,
         mapping=MIDI_CC_MAPPING,
         debug=MIDI_DEBUG,
+        profiles=MIDI_PROFILES,
     )
     if ENABLE_MIDI_INPUT:
         midi_input.start()
+    print(f"[midi] active profile: {midi_input.profile_name if ENABLE_MIDI_INPUT else 'none (MIDI disabled in config)'}")
 
     log_path = BASE_DIR / "logs" / f"descriptors_{int(time.time())}.csv"
     write_log_header(log_path)
@@ -200,6 +204,8 @@ def main(argv: list[str] | None = None) -> None:
     gran = [0.0, 0.0, 1, 0.0]
     plaud_xy = (0.0, 0.0)
     predator_active = False
+    predator_burst_until = 0.0  # pad 2
+    food_pad_on = False  # pad 3
 
     while True:
         dt = clock.tick(FPS) / (1000.0 / FPS)
@@ -212,6 +218,24 @@ def main(argv: list[str] | None = None) -> None:
         midi_controls = midi_input.poll(controls)
         for command in midi_controls:
             print(f"[midi-map] cc={command.cc} -> {command.parameter} = {command.scaled_value}")
+            if command.parameter.startswith("/"):  # knob mapped to a Max mix level, not to the flock
+                osc.send_mix(command.parameter, command.scaled_value)
+
+        for pad in midi_input.take_pads():  # only controllers whose profile defines pads (MPK)
+            print(f"[pad] {pad}")
+            if pad == 1:
+                osc.send_pad_kick()
+            elif pad == 2:  # predator at the centre for a moment: same path as the mouse right button
+                predator_burst_until = now + PAD_PREDATOR_BURST_S
+            elif pad == 3:  # food at the centre on/off
+                food_pad_on = not food_pad_on
+            elif pad == 4:  # clear food and predator
+                food_pad_on = False
+                predator_burst_until = 0.0
+                controls.food_amount = 0.0
+                controls.predator_amount = 0.0
+            elif 5 <= pad <= 8:
+                osc.send_pad_sample(pad - 4)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -232,6 +256,10 @@ def main(argv: list[str] | None = None) -> None:
         mouse_pos = display.view.to_world(pygame.mouse.get_pos())
         attractor = mouse_pos if mouse_buttons[0] else None
         repeller = mouse_pos if mouse_buttons[2] else None
+        if attractor is None and food_pad_on:
+            attractor = Vector2(WIDTH * 0.5, HEIGHT * 0.5)
+        if repeller is None and now < predator_burst_until:
+            repeller = Vector2(WIDTH * 0.5, HEIGHT * 0.5)
         if attractor is None and controls.food_amount > 0.01:
             attractor = Vector2(WIDTH * 0.5, HEIGHT * 0.5)
         if repeller is None and controls.predator_amount > 0.01:
