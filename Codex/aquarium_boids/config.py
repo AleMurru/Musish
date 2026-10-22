@@ -38,7 +38,7 @@ MIDI_CC_MAPPING_MPK = {
     17: ("/mix/grain_ms", 10.0, 400.0, False),   # K2 -> Max granulator grain length (ms); alignment stays 1.0
     18: ("cohesion_weight", 0.0, 3.0, False),    # K3 -> cohesion (as MIDIMIX fader 2)
     19: ("population", 1.0, 100.0, True),        # K4 -> number of fish (as MIDIMIX fader 1)
-    20: ("predator_amount", 0.0, 3.0, False),    # K5 -> centre predator (as MIDIMIX fader 6)
+    20: ("/mix/slice_gain", 0.0, 1.0, False),    # K5 -> Max slice player gain (predator: pad 2 / mouse)
     21: ("/mix/gran_gain", 0.0, 1.0, False),     # K6 -> Max granulator gain
     22: ("/mix/kick_gain", 0.0, 1.0, False),     # K7 -> Max kick gain
     23: ("/mix/master", 0.0, 1.0, False),        # K8 -> Max master
