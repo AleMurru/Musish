@@ -91,6 +91,8 @@ In `prior~` (the PLAUD prior subpatch), three changes put the flock on the map:
 - `shoal_kick.wav`: any short kick sample.
 - `shoal_gran.aiff`: any sound to granulate. The grain region and its length are set in the patch.
 
+To switch sources live, put your own sounds in `max/grains/` and pick them from the menu (.wav / .aif / .aiff; "rescan" refreshes the list).
+
 ## OSC messages (Python → Max, port 7400)
 
 | Address | Range | Meaning |
