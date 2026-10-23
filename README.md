@@ -23,7 +23,7 @@ The instrument concept is called *Shoal*. The project started as *Generative Boi
    v
  Max/MSP
    |- PLAUD (nn~)        flock position steers PLAUD's prior territory;
-   |                     fish count -> loudness, agitation -> temperature
+   |                     fish count -> loudness, agitation -> latent L2
    |- max/shoal_fx       predator events -> a kick + a spectral shake of PLAUD
    '- max/shoal_gran     each fish is a grain voice, panned by its x position
 
@@ -91,8 +91,8 @@ family. Each output goes to a `send` that the patches listen to:
 | Address | Range | Meaning |
 |---|---|---|
 | `/plaud/x`, `/plaud/y` | 0–1 | flock centroid. Steers PLAUD's prior. |
-| `/plaud/loudness` | 0.6–1.4 | follows the number of fish |
-| `/plaud/temp` | 0.2–1.0 | flock energy (agitation). Mapped to synthesis temperature. |
+| `/plaud/loudness` | 0.6–1.4 | follows the number of fish. Drives PLAUD's loudness and its "components" limit. |
+| `/plaud/temp` | 0.2–1.0 | flock energy (agitation). Drives PLAUD's latent L2 (the name is historical). |
 | `/fx/predator` | 1 / 0 | predator scare onset / release. Triggers the kick and the shake. |
 | `/fx/predator_strength` | 0–1 | predator strength (sent before each onset) |
 | `/gran/fish_x` | list of up to 32 floats, 0–1 | x position of each fish. Sets the grain voice pan. |
