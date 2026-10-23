@@ -31,6 +31,8 @@ Thumbs.db
 *.ts
 *.ckpt
 *.amxd
+# your own grain sources for the shoal_gran menu stay local
+max/grains/
 
 # Max backups/autosaves
 *.bak
