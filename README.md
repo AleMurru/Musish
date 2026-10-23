@@ -115,8 +115,8 @@ The descriptors are sent at about 15 Hz. `/mix/*` and `/pad/*` are sent only whe
 
 ## AKAI MPK mini 3
 
-On the controller, set **PROG CHANGE** on and **bank A**. The program is selected automatically
-from the device name. If an AKAI MIDIMIX is also connected, it takes priority and keeps its own
+On the controller, set **PROG CHANGE** on and **bank A**. The mapping profile is chosen
+automatically from the MIDI device name. If an AKAI MIDIMIX is also connected, it takes priority and keeps its own
 mapping.
 
 | Knob | Controls | | Pad | Action |
