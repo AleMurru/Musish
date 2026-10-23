@@ -137,7 +137,7 @@
                         520.0,
                         34.0
                     ],
-                    "text": "5. INIT (loadbang): predator 0, on, gain 0.8, shake 0.3, base waveshaping 0.2, base warp 0, strength 1 (so the test kick shakes before Python sends anything).",
+                    "text": "5. INIT (loadbang): predator 0, on, gain 0.8, shake 0.1, base waveshaping 0, base warp 0, strength 1 (so the test kick shakes before Python sends anything).",
                     "linecount": 2
                 }
             },
