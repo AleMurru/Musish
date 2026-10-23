@@ -78,6 +78,11 @@ family. Each output goes to a `send` that the patches listen to:
 
 `shoal_fx` drives PLAUD's own `---waveshaping` and `---spectral-warp` parameters for the shake.
 
+In `prior~` (the PLAUD prior subpatch), three changes put the flock on the map:
+- `[r plaudX]` → the `territory_x` number box.
+- `[r plaudY]` → `[!- 1.]` → the `territory_y` number box. The inversion is needed because pygame's y axis points down.
+- Change `metro 2754 @active 1` to `metro 2754 @active 0`. This stops prior~'s own random walk on Y, so only the flock moves the point.
+
 **2. Open the two patches** in the same Max session as the device:
 - `max/shoal_fx.maxpat`: the predator kick (synth or sample) and the spectral shake.
 - `max/shoal_gran.maxpat`: a 16-voice granulator, one voice per fish, plus the slice player for pads 5–8.
