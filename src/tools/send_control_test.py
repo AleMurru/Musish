@@ -1,13 +1,11 @@
 """Test Max/MIDIMAX -> Python control input without Max.
 
 Usage:
-    1. In one terminal:
-       cd Codex
-       python main.py
+    1. In one terminal, from the repository root:
+       python src/main.py
 
-    2. In another terminal:
-       cd Codex
-       python tools/send_control_test.py
+    2. In another terminal, from the repository root:
+       python src/tools/send_control_test.py
 
 You should see controls changing in the Pygame HUD and in the terminal.
 """

@@ -37,8 +37,8 @@ Needs Python 3.13 (tested on Windows).
 ```
 python -m venv .venv
 .venv\Scripts\activate
-pip install -r Codex/requirements.txt
-python Codex/main.py
+pip install -r src/requirements.txt
+python src/main.py
 ```
 
 Without Max the simulation runs normally, and the OSC packets simply go unanswered.
@@ -134,10 +134,10 @@ mapping.
 
 ## Repository layout
 
-- `Codex/`: the instrument.
+- `src/`: the instrument.
   - `main.py` and `aquarium_boids/`: simulation, descriptors, OSC, MIDI, rendering.
   - `docs/`: technical notes, mostly in Italian.
-  - `max/`: early test patches.
+  - `tools/send_control_test.py`: sends test controls to UDP port 7500.
 - `max/`: the Shoal patches described above.
 - `docs/archive/`: the original planning notes, in Italian, kept for the record.
 

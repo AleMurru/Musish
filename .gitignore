@@ -15,7 +15,6 @@ env/
 
 # Runtime logs / generated data
 logs/
-Codex/logs/
 *.log
 
 # OS / editor
