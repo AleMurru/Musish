@@ -31,21 +31,23 @@ MIDI_CC_MAPPING = {
 # case-insensitive). Any other device, including the MIDIMIX, uses MIDI_CC_MAPPING above.
 # A parameter starting with "/" is not a simulation control: it is sent to Max as an OSC
 # message (address, scaled value) whenever the knob moves.
-# AKAI MPK mini 3 (measured with the MIDI monitor, current program): knobs K1..K8 send
-# CC 16..23 on channel 1; pads 1..8 send Program Change 16..23 on channel 10.
+# AKAI MPK mini 3 (measured with the MIDI monitor): knobs K1..K8 send CC 16..23 on channel 1; pads 1..8
+# send Program Change 16..23 (pad mode PROG CHANGE) or note-on 16..23 (pad mode NOTE), on channel 10.
+# Both pad modes are accepted, notes on any channel; note-off and velocity 0 are ignored.
 MIDI_CC_MAPPING_MPK = {
-    16: ("noise_weight", 0.0, 1.5, False),       # K1 -> agitation (range as MIDIMIX fader 4)
-    17: ("/mix/grain_ms", 10.0, 400.0, False),   # K2 -> Max granulator grain length (ms); alignment stays 1.0
+    16: ("/mix/grain_ms", 10.0, 400.0, False),   # K1 -> Max granulator grain length (ms)
+    17: ("noise_weight", 0.0, 1.5, False),       # K2 -> agitation (range as MIDIMIX fader 4)
     18: ("cohesion_weight", 0.0, 3.0, False),    # K3 -> cohesion (as MIDIMIX fader 2)
     19: ("population", 1.0, 100.0, True),        # K4 -> number of fish (as MIDIMIX fader 1)
-    20: ("/mix/slice_gain", 0.0, 1.0, False),    # K5 -> Max slice player gain (predator: pad 2 / mouse)
-    21: ("/mix/gran_gain", 0.0, 1.0, False),     # K6 -> Max granulator gain
-    22: ("/mix/kick_gain", 0.0, 1.0, False),     # K7 -> Max kick gain
-    23: ("/mix/master", 0.0, 1.0, False),        # K8 -> Max master
-}
+    20: ("/mix/gran_gain", 0.0, 1.0, False),     # K5 -> Max granulator gain
+    21: ("/mix/slice_gain", 0.0, 1.0, False),    # K6 -> Max slice player gain
+    22: ("/mix/wet", 0.0, 1.0, False),           # K7 -> PLAUD wet level (the gain into vst~)
+    23: ("/mix/master", 0.0, 1.0, False),        # K8 -> PLAUD dry level
+}  # alignment stays 1.0; predator on pad 2 / mouse; kick gain stays at the shoal_fx value
 MIDI_PC_PADS_MPK = {16 + i: i + 1 for i in range(8)}  # Program Change 16..23 -> pad 1..8
-MIDI_PROFILES = {
-    "MPK": (MIDI_CC_MAPPING_MPK, MIDI_PC_PADS_MPK),
+MIDI_NOTE_PADS_MPK = {16 + i: i + 1 for i in range(8)}  # note-on 16..23 -> pad 1..8
+MIDI_PROFILES = {  # name substring -> (CC mapping, Program Change pads, note-on pads)
+    "MPK": (MIDI_CC_MAPPING_MPK, MIDI_PC_PADS_MPK, MIDI_NOTE_PADS_MPK),
 }
 PAD_PREDATOR_BURST_S = 1.0  # pad 2: predator at the centre for this long
 

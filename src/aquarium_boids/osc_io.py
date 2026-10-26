@@ -153,7 +153,8 @@ class OscSender:
     def send_mix(self, address: str, value: float) -> None:
         """Mix levels for Max from controller knobs, sent when the knob moves.
 
-          /mix/gran_gain, /mix/kick_gain, /mix/master  float 0..1
+          /mix/grain_ms (10..400), /mix/gran_gain, /mix/slice_gain, /mix/wet, /mix/master  float
+          (the address and range come from the controller mapping in config.py)
         """
         self.client.send_message(address, float(value))
 

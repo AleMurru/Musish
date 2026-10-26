@@ -33,7 +33,7 @@ class MidiControllerInput:
         device_name: str = "MIDIMIX",
         mapping: dict[int, tuple[str, float, float, bool]] | None = None,
         debug: bool = True,
-        profiles: dict[str, tuple[dict[int, tuple[str, float, float, bool]], dict[int, int]]] | None = None,
+        profiles: dict[str, tuple[dict[int, tuple[str, float, float, bool]], dict[int, int], dict[int, int]]] | None = None,
     ):
         self.device_name = device_name.lower()
         self.mapping = mapping or {}
@@ -41,6 +41,7 @@ class MidiControllerInput:
         self.profiles = profiles or {}
         self.profile_name = "none (MIDI input not started)"
         self.pc_pads: dict[int, int] = {}  # Program Change number -> pad number
+        self.note_pads: dict[int, int] = {}  # note number (note-on, any channel) -> pad number
         self._pending_pads: list[int] = []
         self.enabled = False
         self.device_id: int | None = None
@@ -82,10 +83,11 @@ class MidiControllerInput:
 
     def _select_profile(self) -> None:
         name = self._device_name_found.lower()
-        for key, (mapping, pads) in self.profiles.items():
+        for key, (mapping, pads, note_pads) in self.profiles.items():
             if key.lower() in name:
                 self.mapping = mapping
                 self.pc_pads = pads
+                self.note_pads = note_pads
                 self.profile_name = key
                 return
         self.profile_name = "MIDIMIX (default mapping)"
@@ -155,12 +157,22 @@ class MidiControllerInput:
                     print(f"[midi] program={cc} channel={channel}: not a pad in profile {self.profile_name}")
                 continue
 
+            # Note-on 0x90..0x9F with velocity > 0: pads, only for profiles that map notes (any channel).
+            # Note-off and note-on with velocity 0 are ignored.
+            if message_type in (0x80, 0x90):
+                is_on = message_type == 0x90 and value > 0
+                pad = self.note_pads.get(cc) if is_on else None  # data[1] is the note number
+                if pad is not None:
+                    self._pending_pads.append(pad)
+                    if self.debug:
+                        print(f"[pad] {pad}  (note {cc}, channel {channel})")
+                elif self.debug:
+                    state = "on" if is_on else "off"
+                    print(f"[midi] note {state} {cc} velocity={value} channel={channel}: ignored")
+                continue
+
             # MIDI CC messages are 0xB0..0xBF.
             if message_type != 0xB0:
-                if self.debug and message_type in (0x80, 0x90):
-                    state = "on" if message_type == 0x90 and value > 0 else "off"
-                    print(f"[midi] note {state} {cc} velocity={value} channel={channel}: ignored "
-                          f"(pads act only as Program Change)")
                 continue
 
             if self.debug and self._seen_values.get(cc) != value:
