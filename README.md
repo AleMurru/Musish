@@ -1,4 +1,4 @@
-# Fishmus
+# SynthFish
 
 A flock of simulated fish performs **PLAUD**, a DDSP neural synthesis model trained on about
 30 minutes of recordings by the musician Rafael. Nobody plays notes or writes prompts. The fish
@@ -6,7 +6,7 @@ swim, and their collective behaviour (where the flock is, how agitated it is, wh
 scatters it) drives the model live. The performer shapes the ecosystem (food, predators,
 cohesion, number of fish), and the sound follows the flock.
 
-The instrument concept is called *Shoal*. The project started as *Generative Boids* / Musish.
+SynthFish is the name used in the demo video; the repository is called Fishmus, and the project started as Generative Boids / Musish at the Barcelona workshop.
 
 **Demo video:** <https://youtu.be/3ueGfejkkj8>
 
@@ -93,7 +93,7 @@ The full tables, and the alternative AKAI MIDIMIX mapping, are in [docs/CONTROLS
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | modules, the frame loop, the boid forces, what each descriptor measures, how it reaches the sound |
 | [docs/OSC.md](docs/OSC.md) | every OSC address with its range, plus the control input on UDP 7500 |
 | [docs/CONTROLS.md](docs/CONTROLS.md) | keyboard, mouse, command line, MPK mini 3, MIDIMIX, troubleshooting |
-| [docs/MAX_SETUP.md](docs/MAX_SETUP.md) | the PLAUD device routes, the prior~ edits, the two Shoal patches |
+| [docs/MAX_SETUP.md](docs/MAX_SETUP.md) | the PLAUD device routes, the prior~ edits, the `shoal_fx` and `shoal_gran` patches |
 | [docs/IDEAS.md](docs/IDEAS.md) | known limitations and future work |
 
 ## Repository layout
@@ -112,8 +112,8 @@ docs/                the pages listed above
 
 ## Credits
 
-- Simone Zanetti, Alessandro Murru, and Rafael (music and training recordings).
-- PLAUD by Błażej Kotowski.
+- Simone Zanetti and Alessandro Murru (system design and development); Rafael (music, live performance, training recordings).
+- PLAUD (Performative Latents for Adaptive Unsupervised DDSP) by Błażej Kotowski.
 - Developed at the Generative Music AI Workshop (UPF / MTG with The Sound of AI), Barcelona, July 2026.
 
 ## Limitations
