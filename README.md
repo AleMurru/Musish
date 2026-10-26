@@ -79,9 +79,9 @@ The exact routes, sends and prior~ edits are in [docs/MAX_SETUP.md](docs/MAX_SET
 
 ## Live control: AKAI MPK mini 3
 
-On the controller, set **PROG CHANGE** on and **bank A**. The mapping profile is chosen
+Use **bank A**; the pads work in either pad mode (NOTE or PROG CHANGE). The mapping profile is chosen
 automatically from the MIDI device name.
-- **Knobs:** agitation, grain length, cohesion, number of fish, slice gain, grain gain, kick gain, PLAUD master.
+- **Knobs:** grain length, agitation, cohesion, number of fish, grain gain, slice gain, PLAUD wet, PLAUD dry.
 - **Pads:** kick, scare, food, calm, and four slices of the grain source.
 
 The full tables, and the alternative AKAI MIDIMIX mapping, are in [docs/CONTROLS.md](docs/CONTROLS.md).

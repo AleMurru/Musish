@@ -18,7 +18,7 @@ Add one `[udpreceive 7400]` to the device and four `route` objects. Each output 
 | `route /plaud/x /plaud/y /plaud/loudness /plaud/temp` | `s plaudX`, `s plaudY` (read by `prior~`); `/plaud/loudness` → the loudness dial and, through `scale 0.7 1.4 1. 0.`, the components limit; `/plaud/temp` → the latent L2 dial |
 | `route /fx/predator /fx/predator_strength` | `s fxPredator`, `s fxPredatorStrength` |
 | `route /gran/fish_x /gran/density /gran/noise` | `s granFishX`, `s granDensity`, `s granNoise` |
-| `route /mix/master /mix/kick_gain /mix/gran_gain /pad/kick /pad/sample /mix/grain_ms /mix/slice_gain` | `/mix/master` → `scale 0. 1. -70. 0.` → PLAUD output gain (dB); the others → `s mixKickGain`, `s mixGranGain`, `s padKick`, `s padSample`, `s mixGrainMs`, `s mixSliceGain` |
+| `route /mix/master /mix/kick_gain /mix/gran_gain /pad/kick /pad/sample /mix/grain_ms /mix/slice_gain /mix/wet` | `/mix/master` → `scale 0. 1. -70. 0.` → `pack f 30` → `line 0. 10` → the dry `live.gain~` (PLAUD output); `/mix/wet` → the same chain → the wet `live.gain~` that feeds `vst~` (the one CC 61 also drives); the others → `s mixKickGain`, `s mixGranGain`, `s padKick`, `s padSample`, `s mixGrainMs`, `s mixSliceGain` |
 
 All addresses and ranges are listed in [OSC.md](OSC.md).
 
@@ -57,7 +57,7 @@ Git ignores audio files and `max/grains/`, so your sounds never end up in the re
 - **Shake:** on each kick, PLAUD's `---waveshaping` (0–1) and `---spectral-warp` (−1–1) jump to base + shake × strength, then glide back to base in 400 ms.
 - **Controls:**
   - on/off, test kick, kick gain (0.8), shake amount (0.1), base waveshaping (0), base spectral warp (0), sample gain;
-  - MPK K7 (`r mixKickGain`) sets the kick level;
+  - `r mixKickGain` sets the kick level (no MPK knob sends it now);
   - MPK pad 1 (`r padKick`) fires one kick.
 
 ## shoal_gran.maxpat: one grain voice per fish
@@ -87,9 +87,9 @@ Git ignores audio files and `max/grains/`, so your sounds never end up in the re
 
 | Control | Default | MPK knob |
 |---|---|---|
-| master gain | 0.6 | K6 (`r mixGranGain`) |
-| grain length | 80 ms | K2 (`r mixGrainMs`) |
-| slice gain | 0.7 | K5 (`r mixSliceGain`) |
+| master gain | 0.6 | K5 (`r mixGranGain`) |
+| grain length | 80 ms | K1 (`r mixGrainMs`) |
+| slice gain | 0.7 | K6 (`r mixSliceGain`) |
 | region start | 89 s | — |
 | region width | 15 s | — |
 | tone (low-pass) | 6000 Hz | — |

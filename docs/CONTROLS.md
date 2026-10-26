@@ -39,24 +39,24 @@ The keyboard has no upper limit on the weights, unlike MIDI and UDP, which clip.
 
 ## AKAI MPK mini 3
 
-**Controller settings:** set **PROG CHANGE** on and select **bank A**. Then:
-- the pads send Program Change 16–23 on MIDI channel 10;
-- the knobs K1–K8 send CC 16–23 on channel 1.
+**Controller settings:** select **bank A**. Then:
+- the knobs K1–K8 send CC 16–23 on channel 1;
+- the pads send note-on 16–23 on channel 10 (pad mode NOTE) or Program Change 16–23 (pad mode PROG CHANGE). Both are accepted; notes on any channel.
 
 **Knobs** (from `MIDI_CC_MAPPING_MPK` in `config.py`). A parameter that starts with `/` is not a simulation control: it is sent to Max as that OSC address whenever the knob moves.
 
 | Knob | CC | Controls | Range |
 |---|---|---|---|
-| K1 | 16 | agitation (`noise_weight`) | 0–1.5 |
-| K2 | 17 | grain length → `/mix/grain_ms` | 10–400 ms |
+| K1 | 16 | grain length → `/mix/grain_ms` | 10–400 ms |
+| K2 | 17 | agitation (`noise_weight`) | 0–1.5 |
 | K3 | 18 | `cohesion_weight` | 0–3 |
 | K4 | 19 | number of fish (`population`) | 1–100 |
-| K5 | 20 | slice gain → `/mix/slice_gain` | 0–1 |
-| K6 | 21 | grain gain → `/mix/gran_gain` | 0–1 |
-| K7 | 22 | kick gain → `/mix/kick_gain` | 0–1 |
-| K8 | 23 | PLAUD master → `/mix/master` | 0–1 |
+| K5 | 20 | grain gain → `/mix/gran_gain` | 0–1 |
+| K6 | 21 | slice gain → `/mix/slice_gain` | 0–1 |
+| K7 | 22 | PLAUD wet level (the gain into the effect) → `/mix/wet` | 0–1 |
+| K8 | 23 | PLAUD dry level → `/mix/master` | 0–1 |
 
-Alignment stays at 1.0 with this controller.
+Alignment stays at 1.0 with this controller. The predator is on pad 2 and the right mouse button. The kick level is no longer on a knob: it stays at the value set in `shoal_fx.maxpat`.
 
 **Pads:**
 
@@ -68,7 +68,7 @@ Alignment stays at 1.0 with this controller.
 | 4 | calm: removes pad food, the scare and any fader-set food or predator |
 | 5–8 | play slice 1–4 of the grain source (`/pad/sample 1–4`) |
 
-Note-on / note-off from the pads (PROG CHANGE off) and the joystick are ignored.
+Note-off, note-on with velocity 0, notes outside 16–23 and the joystick are ignored.
 
 ## AKAI MIDIMIX
 
@@ -117,7 +117,7 @@ With `MIDI_DEBUG = True` (the default), every message is printed:
 | no `[midi] listening to …` line | Another program (Max, a DAW) may hold the controller: close it, unplug and replug, restart. Python opens the device itself; Max must not read it |
 | the wrong device opened (`… fallback`) | Set `MIDI_INPUT_NAME` in `config.py` to part of the name printed at start |
 | `[midi] cc=…` lines but no `[midi-map]` | That CC is not in the active table: re-map it |
-| MPK pads print `note on … ignored` | PROG CHANGE is off on the controller |
+| MPK pads print `note on N … ignored` or `program=N … not a pad` | The pads are not on bank A (they send numbers outside 16–23) |
 
 ## UDP control port 7500
 
