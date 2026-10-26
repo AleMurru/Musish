@@ -8,7 +8,7 @@ cohesion, number of fish), and the sound follows the flock.
 
 The instrument concept is called *Shoal*. The project started as *Generative Boids* / Musish.
 
-**Demo video:** [VIDEO_LINK](VIDEO_LINK)
+**Demo video:** <https://youtu.be/3ueGfejkkj8>
 
 ## How it works
 
