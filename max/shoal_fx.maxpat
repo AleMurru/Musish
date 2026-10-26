@@ -2098,7 +2098,7 @@
                         210.0,
                         20.0
                     ],
-                    "text": "MPK K7 -> kick gain and sample gain"
+                    "text": "r mixKickGain -> kick + sample gain"
                 }
             }
         ],

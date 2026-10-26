@@ -2527,7 +2527,7 @@
                         150.0,
                         20.0
                     ],
-                    "text": "MPK K6 -> master gain"
+                    "text": "MPK K5 -> master gain"
                 }
             },
             {
@@ -3033,7 +3033,7 @@
                         140.0,
                         20.0
                     ],
-                    "text": "MPK K2 -> grain length"
+                    "text": "MPK K1 -> grain length"
                 }
             },
             {
@@ -3614,7 +3614,7 @@
                         140.0,
                         20.0
                     ],
-                    "text": "MPK K5 -> slice gain"
+                    "text": "MPK K6 -> slice gain"
                 }
             },
             {
