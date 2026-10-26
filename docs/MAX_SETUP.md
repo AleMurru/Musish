@@ -1,0 +1,120 @@
+# Max setup
+
+The Python simulation runs on its own (see the [README](../README.md)). To hear it, you need Max and the PLAUD device.
+
+## What you need
+
+- **Max 9**, standalone. The two Shoal patches were built for standalone Max, not for Max for Live.
+- The **`nn~`** external.
+- A **PLAUD device and a trained PLAUD model**. PLAUD is by Błażej Kotowski and is not included in this repository. The performance used a model trained on about 30 minutes of recordings by Rafael.
+- **Your own audio files.** No audio is shipped (see step 3).
+
+## 1. Receive OSC in the PLAUD device
+
+Add one `[udpreceive 7400]` to the device and four `route` objects. Each output goes to a `send` that the device or the Shoal patches listen to:
+
+| `route` | Outlet → destination |
+|---|---|
+| `route /plaud/x /plaud/y /plaud/loudness /plaud/temp` | `s plaudX`, `s plaudY` (read by `prior~`); `/plaud/loudness` → the loudness dial and, through `scale 0.7 1.4 1. 0.`, the components limit; `/plaud/temp` → the latent L2 dial |
+| `route /fx/predator /fx/predator_strength` | `s fxPredator`, `s fxPredatorStrength` |
+| `route /gran/fish_x /gran/density /gran/noise` | `s granFishX`, `s granDensity`, `s granNoise` |
+| `route /mix/master /mix/kick_gain /mix/gran_gain /pad/kick /pad/sample /mix/grain_ms /mix/slice_gain` | `/mix/master` → `scale 0. 1. -70. 0.` → PLAUD output gain (dB); the others → `s mixKickGain`, `s mixGranGain`, `s padKick`, `s padSample`, `s mixGrainMs`, `s mixSliceGain` |
+
+All addresses and ranges are listed in [OSC.md](OSC.md).
+
+## 2. Let the flock steer PLAUD's prior
+
+In `prior~`, the device's prior subpatch, make three changes:
+
+1. `[r plaudX]` → the `territory_x` number box.
+2. `[r plaudY]` → `[!- 1.]` → the `territory_y` number box. pygame's y axis points down, so it is inverted here.
+3. Change `metro 2754 @active 1` to `metro 2754 @active 0`. This stops prior~'s own random walk on Y, so only the flock moves the point.
+
+## 3. Open the Shoal patches and add audio
+
+Open `max/shoal_fx.maxpat` and `max/shoal_gran.maxpat` in the same Max session as the device, then turn DSP on. Both open in presentation view. Both have their own `dac~ 1 2`.
+
+Put your own files next to the patches:
+
+| File | Used by | Notes |
+|---|---|---|
+| `max/shoal_kick.wav` | `shoal_fx` | any short kick; loaded 2 s after the patch opens |
+| `max/shoal_gran.aiff` | `shoal_gran` | the default grain source, loaded at start |
+| `max/grains/*.wav`, `*.aif`, `*.aiff` | `shoal_gran` | optional: more sources, picked from the menu ("rescan" refreshes the list) |
+
+Git ignores audio files and `max/grains/`, so your sounds never end up in the repository.
+
+## shoal_fx: predator kick and spectral shake
+
+- **Inputs:** `r fxPredator` (1 = the scare starts, 0 = it ends) and `r fxPredatorStrength` (0–1).
+- **Repeats:**
+  - while the scare lasts and the patch is on, a kick fires at once and then every 800 ms;
+  - safety: if nothing arrives for 1 s while active, the state switches off (the console prints `shoal_fx_timeout`).
+- **Kick:**
+  - *synth*: pitch 220 → 55 Hz in 120 ms, a 400 ms decay, a 5 ms noise click, light `tanh~` saturation;
+  - *sample*: `shoal_kick.wav` from the start, in stereo;
+  - the kick-source menu chooses synth / sample / both (default: sample).
+- **Shake:** on each kick, PLAUD's `---waveshaping` (0–1) and `---spectral-warp` (−1–1) jump to base + shake × strength, then glide back to base in 400 ms.
+- **Controls:**
+  - on/off, test kick, kick gain (0.8), shake amount (0.1), base waveshaping (0), base spectral warp (0), sample gain;
+  - MPK K7 (`r mixKickGain`) sets the kick level;
+  - MPK pad 1 (`r padKick`) fires one kick.
+
+## shoal_gran: one grain voice per fish
+
+- **Inputs:** `r granFishX`, `r granDensity`, `r granNoise`.
+- **Voices:**
+  - 16 MC voices; voice i follows fish i;
+  - voices above the number of fish fade out in about 50 ms.
+- **Onsets:**
+  - each voice has its own onset clock at `(0.5 + 0.075 × density)` grains/s;
+  - a slowly drifting random factor makes onsets drift instead of buzzing; its depth grows with `noise`;
+  - the rate is capped so a grain ends before the next one starts.
+- **Grains:**
+  - each grain reads exactly *grain length* ms at 1× speed under a Hann window;
+  - the read position is random inside the region, over a span that widens with `noise`;
+  - grains come from the left channel of the source.
+- **Pan and output:**
+  - each voice is panned by its fish's x (equal power, smoothed over ~60 ms);
+  - then a low-pass "tone" filter;
+  - master gain × 1/√(active voices).
+- **Source:**
+  - `shoal_gran.aiff` at start, or a file chosen from the `grains/` menu;
+  - after each load, `info~` reads the file length; the region (start + width) is clamped to it.
+- **Slice player:** MPK pads 5–8 (`r padSample` 1–4) play a 1.5 s stereo slice from 10 / 30 / 55 / 80 % of the file, with 20 ms fades and their own gain.
+- **Test mode:** 16 fake fish drift on slow sines, so you can hear the patch without Python.
+- **Controls and defaults:**
+
+| Control | Default | MPK knob |
+|---|---|---|
+| master gain | 0.6 | K6 (`r mixGranGain`) |
+| grain length | 80 ms | K2 (`r mixGrainMs`) |
+| slice gain | 0.7 | K5 (`r mixSliceGain`) |
+| region start | 89 s | — |
+| region width | 15 s | — |
+| tone (low-pass) | 6000 Hz | — |
+
+## Console messages
+
+| Message | Meaning |
+|---|---|
+| `shoal_gran: source <name> loaded` | a grain source is in memory |
+| `shoal_gran: duration_ms …`, `shoal_gran: channels …` | what `info~` read from the file |
+| `shoal_gran: ERROR source shoal_gran.aiff NOT FOUND …` | no default source next to the patch (after 5 s) |
+| `shoal_gran: sounds_in_grains N` | the menu found N files in `grains/` |
+| `shoal_gran_region start_s … / width_s …` | the region actually used after clamping |
+| `shoal_gran_slice …` | a pad slice was played |
+| `shoal_fx: kick sample shoal_kick.wav loaded` | the sample kick is ready |
+| `shoal_fx: ERROR kick sample shoal_kick.wav NOT FOUND …` | no kick file next to the patch (after 2 s); the synth kick still works |
+| `shoal_fx_strength_in …` | raw `/fx/predator_strength` values as they arrive (diagnostic) |
+| `shoal_fx_timeout` | no predator message for 1 s while active; the state switched off |
+
+## Audio troubleshooting
+
+- **No sound at all:** check that DSP is on (Options → Audio Status) and that the output device is the right one.
+- **Max receives nothing:**
+  - is `python src/main.py` running?
+  - does another program already use UDP port 7400?
+  - add `[print]` after `udpreceive 7400` to see the raw messages.
+- **Two copies of a patch open:** they share the `buffer~` names and the `send`/`receive` names, so only one copy of each should be open.
+- **Large sources** load completely into RAM with `replace`. Very long files take a moment, and memory.
