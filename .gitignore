@@ -40,7 +40,3 @@ max/grains/
 # Other local experiments
 # Claude/ was an early prototype; removed from this branch, still available in the git history
 Claude/
-aquarium/
-smoke_test.py
-Guida_utilizzo.md
-Guida_Max.md
