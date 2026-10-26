@@ -14,7 +14,7 @@ Rates:
 
 All values are floats unless noted.
 
-## Used by the Shoal setup
+## Used by the SynthFish setup
 
 ### PLAUD (`/plaud/*`): descriptor rate
 
@@ -57,7 +57,7 @@ All values are floats unless noted.
 | `/pad/kick` | no arguments | MPK pad 1 | one kick now |
 | `/pad/sample` | int 1–4 | MPK pads 5–8 | play slice 1–4 of the grain source |
 
-## Legacy streams (still sent, not used by Shoal)
+## Legacy streams (still sent, not used by SynthFish)
 
 Kept so that nothing that listened to them before breaks.
 

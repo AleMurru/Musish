@@ -1,6 +1,6 @@
 # Architecture
 
-Fishmus has two halves that talk over OSC on the local machine. The Python half simulates the flock and turns its behaviour into numbers; the Max half makes all the sound.
+SynthFish has two halves that talk over OSC on the local machine. The Python half simulates the flock and turns its behaviour into numbers; the Max half makes all the sound.
 
 ```
  src/main.py (Python 3.13, pygame)                       Max 9
@@ -93,8 +93,8 @@ Computed every frame over the whole flock, then smoothed with a one-pole filter 
 | PLAUD position | `center_x_raw`, `center_y_raw` | `/plaud/x`, `/plaud/y` → the device's `prior~` territory (y inverted there, because pygame's y points down) |
 | PLAUD loudness and components limit | `fish_count` | `/plaud/loudness = 0.6 + 0.8 × fish_count` |
 | PLAUD latent L2 | `energy` | `/plaud/temp = clip(0.2 + 1.3 × energy, 0, 1)` (the name is historical) |
-| Kick + spectral shake | predator onset / release, strength | `/fx/predator`, `/fx/predator_strength`; `shoal_fx` kicks every 800 ms while the scare lasts |
-| Grain voices | each fish's x | `/gran/fish_x` (first 32 fish; `shoal_gran` uses 16), one voice per fish, panned by x |
+| Kick + spectral shake | predator onset / release, strength | `/fx/predator`, `/fx/predator_strength`; `shoal_fx.maxpat` kicks every 800 ms while the scare lasts |
+| Grain voices | each fish's x | `/gran/fish_x` (first 32 fish; `shoal_gran.maxpat` uses 16), one voice per fish, panned by x |
 | Grain rate and jitter | `fish_count`, agitation, predator, disorder | `/gran/density = 100 × fish_count`; `/gran/noise = clip(1.2·energy + 0.7·predator/3 + 0.2·(1 − coherence))` |
 | Mix and pads | MPK mini 3 | `/mix/*` when a knob moves, `/pad/*` when a pad is hit |
 
@@ -102,7 +102,7 @@ Design rule: the flock drives a few expressive parameters; everything else in PL
 
 ## Legacy layer: symbolic notes (`markov.py`)
 
-The project began as "fish → descriptors → symbolic music". That layer still runs and still sends `/music/*`, but the Shoal patches do not use it.
+The project began as "fish → descriptors → symbolic music". That layer still runs and still sends `/music/*`, but the SynthFish patches do not use it.
 
 - Two first-order Markov chains:
   - **pitch** over scale degrees 0–6;

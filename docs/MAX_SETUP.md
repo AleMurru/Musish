@@ -4,14 +4,14 @@ The Python simulation runs on its own (see the [README](../README.md)). To hear 
 
 ## What you need
 
-- **Max 9**, standalone. The two Shoal patches were built for standalone Max, not for Max for Live.
+- **Max 9**, standalone. The two SynthFish patches were built for standalone Max, not for Max for Live.
 - The **`nn~`** external.
 - A **PLAUD device and a trained PLAUD model**. PLAUD is by Błażej Kotowski and is not included in this repository. The performance used a model trained on about 30 minutes of recordings by Rafael.
 - **Your own audio files.** No audio is shipped (see step 3).
 
 ## 1. Receive OSC in the PLAUD device
 
-Add one `[udpreceive 7400]` to the device and four `route` objects. Each output goes to a `send` that the device or the Shoal patches listen to:
+Add one `[udpreceive 7400]` to the device and four `route` objects. Each output goes to a `send` that the device or the SynthFish patches listen to:
 
 | `route` | Outlet → destination |
 |---|---|
@@ -30,7 +30,7 @@ In `prior~`, the device's prior subpatch, make three changes:
 2. `[r plaudY]` → `[!- 1.]` → the `territory_y` number box. pygame's y axis points down, so it is inverted here.
 3. Change `metro 2754 @active 1` to `metro 2754 @active 0`. This stops prior~'s own random walk on Y, so only the flock moves the point.
 
-## 3. Open the Shoal patches and add audio
+## 3. Open the SynthFish patches and add audio
 
 Open `max/shoal_fx.maxpat` and `max/shoal_gran.maxpat` in the same Max session as the device, then turn DSP on. Both open in presentation view. Both have their own `dac~ 1 2`.
 
@@ -38,13 +38,13 @@ Put your own files next to the patches:
 
 | File | Used by | Notes |
 |---|---|---|
-| `max/shoal_kick.wav` | `shoal_fx` | any short kick; loaded 2 s after the patch opens |
-| `max/shoal_gran.aiff` | `shoal_gran` | the default grain source, loaded at start |
-| `max/grains/*.wav`, `*.aif`, `*.aiff` | `shoal_gran` | optional: more sources, picked from the menu ("rescan" refreshes the list) |
+| `max/shoal_kick.wav` | `shoal_fx.maxpat` | any short kick; loaded 2 s after the patch opens |
+| `max/shoal_gran.aiff` | `shoal_gran.maxpat` | the default grain source, loaded at start |
+| `max/grains/*.wav`, `*.aif`, `*.aiff` | `shoal_gran.maxpat` | optional: more sources, picked from the menu ("rescan" refreshes the list) |
 
 Git ignores audio files and `max/grains/`, so your sounds never end up in the repository.
 
-## shoal_fx: predator kick and spectral shake
+## shoal_fx.maxpat: predator kick and spectral shake
 
 - **Inputs:** `r fxPredator` (1 = the scare starts, 0 = it ends) and `r fxPredatorStrength` (0–1).
 - **Repeats:**
@@ -60,7 +60,7 @@ Git ignores audio files and `max/grains/`, so your sounds never end up in the re
   - MPK K7 (`r mixKickGain`) sets the kick level;
   - MPK pad 1 (`r padKick`) fires one kick.
 
-## shoal_gran: one grain voice per fish
+## shoal_gran.maxpat: one grain voice per fish
 
 - **Inputs:** `r granFishX`, `r granDensity`, `r granNoise`.
 - **Voices:**

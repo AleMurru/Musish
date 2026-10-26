@@ -41,7 +41,7 @@ Nothing on this page is implemented. Items are grouped by area. Known limitation
 
 ## The symbolic layer (`/music/*`)
 
-The Markov generator still runs but is not part of the Shoal performance. To make it musical:
+The Markov generator still runs but is not part of the SynthFish performance. To make it musical:
 
 - **A beat grid:** a 16th-note clock at the BPM. The rhythm chain then decides which steps sound. Today notes start at a continuous rate, so the rhythm chain is not audible.
 - **Real harmony:** send a triad on a "pad" channel and the chord root as a bass note, instead of folding `degree + chord_degree` into one note.
