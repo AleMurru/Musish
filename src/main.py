@@ -118,7 +118,7 @@ def handle_key(event: pygame.event.Event, controls: RuntimeControls, flock: list
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Aquarium boids -> OSC -> Max")
+    parser = argparse.ArgumentParser(description="Fishmus: a flock of fish -> OSC -> Max")
     parser.add_argument(
         "--classic",
         action="store_true",
@@ -159,7 +159,7 @@ def parse_size(text: str) -> tuple[int, int]:
 def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     pygame.init()
-    display = Display((WIDTH, HEIGHT), args.size, "Aquarium Boids OSC -> Max", fullscreen=args.fullscreen)
+    display = Display((WIDTH, HEIGHT), args.size, "Fishmus - boids -> OSC -> Max", fullscreen=args.fullscreen)
     clock = pygame.time.Clock()
     font = pygame.font.SysFont("consolas", 16)
     renderer = (

@@ -122,7 +122,7 @@ def draw_hud(
     origin: tuple[int, int] = (0, 0),
 ) -> None:
     lines = [
-        "Acquario / Boids -> Max | MIDIMIX direct + Max control ready",
+        "Fishmus | boids -> OSC -> Max | MIDI and UDP 7500 control active",
         f"density_fader UP/DOWN: {controls.density_fader:.2f} | section 1-6: {controls.section_name}",
         f"A/Z align {controls.alignment_weight:.2f} | S/X cohesion {controls.cohesion_weight:.2f} | D/C separation {controls.separation_weight:.2f} | N/M noise {controls.noise_weight:.2f}",
         f"food_amount {controls.food_amount:.2f} | predator_amount {controls.predator_amount:.2f} | mouse food/pred {controls.food_strength:.2f}/{controls.predator_strength:.2f}",
