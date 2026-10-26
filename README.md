@@ -37,7 +37,7 @@ Needs Python 3.13 (tested on Windows).
 ```
 python -m venv .venv
 .venv\Scripts\activate
-pip install -r src/requirements.txt
+pip install -r requirements.txt
 python src/main.py
 ```
 
