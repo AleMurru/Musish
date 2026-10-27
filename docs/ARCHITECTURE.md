@@ -40,7 +40,7 @@ SynthFish has two halves that talk over OSC on the local machine. The Python hal
 1. reads the controls that arrived on UDP 7500, the MIDI input and the pads;
 2. handles keyboard and window events;
 3. works out the **attractor** and the **repeller**:
-   - attractor: left mouse at the pointer, otherwise pad 3 or `food_amount > 0.01` at the centre;
+   - attractor: left mouse at the pointer or the MPK joystick food point (the most recently started wins), otherwise pad 3 or `food_amount > 0.01` at the centre;
    - repeller: right mouse at the pointer, otherwise a pad-2 burst (0.7 s) or `predator_amount > 0.01` at the centre;
 4. sends `/fx/predator 1` or `0` when the repeller appears or disappears (strength first on onset);
 5. grows or shrinks the flock to the `population` control (1–100);
@@ -96,7 +96,7 @@ Computed every frame over the whole flock, then smoothed with a one-pole filter 
 | Kick + spectral shake | predator onset / release, strength | `/fx/predator`, `/fx/predator_strength`; `shoal_fx.maxpat` kicks every 800 ms while the scare lasts |
 | Grain voices | each fish's x | `/gran/fish_x` (first 32 fish; `shoal_gran.maxpat` uses 16), one voice per fish, panned by x |
 | Grain rate and jitter | `fish_count`, agitation, predator, disorder | `/gran/density = 100 × fish_count`; `/gran/noise = clip(1.2·energy + 0.7·predator/3 + 0.2·(1 − coherence))` |
-| Mix and pads | MPK mini 3 | `/mix/*` when a knob moves, `/pad/*` when a pad is hit |
+| Mix, pads, transpose | MPK mini 3 | `/mix/*` when a knob moves, `/pad/*` when a pad is hit, `/mix/transpose` when a key is pressed |
 
 Design rule: the flock drives a few expressive parameters; everything else in PLAUD stays in the performer's hands.
 

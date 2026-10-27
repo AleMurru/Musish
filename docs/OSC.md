@@ -54,6 +54,7 @@ All values are floats unless noted.
 | `/mix/gran_gain` | 0–1 | MPK K5 | granulator master gain |
 | `/mix/slice_gain` | 0–1 | MPK K6 | slice player gain |
 | `/mix/grain_ms` | 10–400 | MPK K1 | grain length in ms |
+| `/mix/transpose` | int −12–12 | MPK keys 48–72 | transpose of the grain source in semitones (note − 60), latched until the next key; grains and slices |
 | `/mix/kick_gain` | 0–1 | — | kick level (synth and sample). The device and `shoal_fx.maxpat` still accept it, but no controller sends it now |
 | `/pad/kick` | no arguments | MPK pad 1 | one kick now |
 | `/pad/sample` | int 1–4 | MPK pads 5–8 | play slice 1–4 of the grain source |

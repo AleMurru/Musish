@@ -24,7 +24,7 @@ SynthFish is the name used in the demo video; the repository is called Fishmus, 
  Max/MSP
    |- PLAUD (nn~)        flock position steers PLAUD's prior territory;
    |                     fish count -> loudness, agitation -> latent L2
-   |- max/shoal_fx       predator events -> a kick + a spectral shake of PLAUD
+   |- max/shoal_fx       predator events -> a kick (with reverb) + a spectral shake of PLAUD
    '- max/shoal_gran     each fish is a grain voice, panned by its x position
 
  AKAI MPK mini 3 (MIDI) -> live control of the flock and of the mix
@@ -71,7 +71,7 @@ All keys and options are listed in [docs/CONTROLS.md](docs/CONTROLS.md).
 **Setup, in three steps:**
 1. In the PLAUD device, add `[udpreceive 7400]` with one `route` for each address family: `/plaud/*`, `/fx/*`, `/gran/*`, `/mix/*`, `/pad/*`.
 2. In `prior~`, connect the flock position to the territory. Also switch off prior~'s own random walk.
-3. Open `max/shoal_fx.maxpat` (predator kick and spectral shake) and `max/shoal_gran.maxpat` (one grain voice per fish).
+3. Open `max/shoal_fx.maxpat` (predator kick, spectral shake and reverb) and `max/shoal_gran.maxpat` (one grain voice per fish).
 
 No audio is shipped. Put your own `shoal_kick.wav` and `shoal_gran.aiff` next to the patches. To switch sources live, put your own sounds in `max/grains/` and pick them from the menu.
 
@@ -83,6 +83,8 @@ Use **bank A**; the pads work in either pad mode (NOTE or PROG CHANGE). The mapp
 automatically from the MIDI device name.
 - **Knobs:** grain length, agitation, cohesion, number of fish, grain gain, slice gain, PLAUD wet, PLAUD dry.
 - **Pads:** kick, scare, food, calm, and four slices of the grain source.
+- **Joystick:** steers a food point around the screen; at rest, no food.
+- **Keys:** transpose the grain source by −12…+12 semitones (latched until the next key).
 
 The full tables, and the alternative AKAI MIDIMIX mapping, are in [docs/CONTROLS.md](docs/CONTROLS.md).
 
@@ -105,7 +107,7 @@ src/
   aquarium_boids/    simulation, descriptors, OSC, MIDI, rendering
   tools/             send_control_test.py (test controls on UDP 7500)
 max/
-  shoal_fx.maxpat    predator kick + spectral shake
+  shoal_fx.maxpat    predator kick + spectral shake + reverb
   shoal_gran.maxpat  per-fish granulator, slice player, source menu
 docs/                the pages listed above
 ```

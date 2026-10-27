@@ -18,7 +18,7 @@ Add one `[udpreceive 7400]` to the device and four `route` objects. Each output 
 | `route /plaud/x /plaud/y /plaud/loudness /plaud/temp` | `s plaudX`, `s plaudY` (read by `prior~`); `/plaud/loudness` → the loudness dial and, through `scale 0.7 1.4 1. 0.`, the components limit; `/plaud/temp` → the latent L2 dial |
 | `route /fx/predator /fx/predator_strength` | `s fxPredator`, `s fxPredatorStrength` |
 | `route /gran/fish_x /gran/density /gran/noise` | `s granFishX`, `s granDensity`, `s granNoise` |
-| `route /mix/master /mix/kick_gain /mix/gran_gain /pad/kick /pad/sample /mix/grain_ms /mix/slice_gain /mix/wet` | `/mix/master` → `scale 0. 1. -70. 0.` → `pack f 30` → `line 0. 10` → the dry `live.gain~` (PLAUD output); `/mix/wet` → the same chain → the wet `live.gain~` that feeds `vst~` (the one CC 61 also drives); the others → `s mixKickGain`, `s mixGranGain`, `s padKick`, `s padSample`, `s mixGrainMs`, `s mixSliceGain` |
+| `route /mix/master /mix/kick_gain /mix/gran_gain /pad/kick /pad/sample /mix/grain_ms /mix/slice_gain /mix/wet /mix/transpose` | `/mix/master` → `scale 0. 1. -70. 0.` → `pack f 30` → `line 0. 10` → the dry `live.gain~` (PLAUD output); `/mix/wet` → the same chain → the wet `live.gain~` that feeds `vst~` (the one CC 61 also drives); the others → `s mixKickGain`, `s mixGranGain`, `s padKick`, `s padSample`, `s mixGrainMs`, `s mixSliceGain`, `s mixTranspose` |
 
 All addresses and ranges are listed in [OSC.md](OSC.md).
 
@@ -77,7 +77,7 @@ Git ignores audio files and `max/grains/`, so your sounds never end up in the re
   - a slowly drifting random factor makes onsets drift instead of buzzing; its depth grows with `noise`;
   - the rate is capped so a grain ends before the next one starts.
 - **Grains:**
-  - each grain reads exactly *grain length* ms at 1× speed under a Hann window;
+  - each grain lasts *grain length* ms under a Hann window and reads the source at the transpose ratio (1× at 0 st);
   - the read position is random inside the region, over a span that widens with `noise`;
   - grains come from the left channel of the source.
 - **Pan and output:**
@@ -87,6 +87,10 @@ Git ignores audio files and `max/grains/`, so your sounds never end up in the re
 - **Source:**
   - `shoal_gran.aiff` at start, or a file chosen from the `grains/` menu;
   - after each load, `info~` reads the file length; the region (start + width) is clamped to it.
+- **Transpose:** `r mixTranspose` (−12…+12 st, from the MPK keys) gives a ratio 2^(st/12).
+  - Grains keep their duration (K1) but read *grain length* × ratio ms of the source, with a 20 ms ramp. The region start is limited using that span.
+  - Slices read 1500 × ratio ms in their 1.5 s; a change applies from the next pad.
+  - The presentation shows it as *transpose (st, MPK keys)*.
 - **Slice player:** MPK pads 5–8 (`r padSample` 1–4) play a 1.5 s stereo slice from 10 / 30 / 55 / 80 % of the file, with 20 ms fades and their own gain.
 - **Test mode:** 16 fake fish drift on slow sines, so you can hear the patch without Python.
 - **Controls and defaults:**

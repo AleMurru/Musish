@@ -21,7 +21,7 @@ python src/main.py [--fullscreen] [--classic] [--mode art|data] [--size WxH]
 
 | Input | Effect |
 |---|---|
-| mouse left (hold) | food: fish are drawn to the pointer |
+| mouse left (hold) | food: fish are drawn to the pointer. If the MPK joystick is also placing food, the most recently started source wins |
 | mouse right (hold) | predator: fish flee the pointer (within 220 px); Max gets `/fx/predator 1`, then `0` on release |
 | `-` / `=` | fewer / more fish (steps of 5, 1–100) |
 | `A`/`Z`, `S`/`X`, `D`/`C` | alignment, cohesion, separation up / down (steps of 0.1) |
@@ -41,7 +41,9 @@ The keyboard has no upper limit on the weights, unlike MIDI and UDP, which clip.
 
 **Controller settings:** select **bank A**. Then:
 - the knobs K1–K8 send CC 16–23 on channel 1;
-- the pads send note-on 16–23 on channel 10 (pad mode NOTE) or Program Change 16–23 (pad mode PROG CHANGE). Both are accepted; notes on any channel.
+- the pads send note-on 16–23 on channel 10 (pad mode NOTE) or Program Change 16–23 (pad mode PROG CHANGE). Both are accepted; notes on any channel;
+- the joystick sends CC 80 (x, 0 = left, 127 = right) and CC 81 (y) on channel 1, resting at about 64;
+- the keys send note-on 48–72 on channel 1 (middle C = 60), with a real note-off on release.
 
 **Knobs** (from `MIDI_CC_MAPPING_MPK` in `config.py`). A parameter that starts with `/` is not a simulation control: it is sent to Max as that OSC address whenever the knob moves.
 
@@ -68,7 +70,15 @@ Alignment stays at 1.0 with this controller. The predator is on pad 2 and the ri
 | 4 | calm: removes pad food, the scare and any fader-set food or predator |
 | 5–8 | play slice 1–4 of the grain source (`/pad/sample 1–4`) |
 
-Note-off, note-on with velocity 0, notes outside 16–23 and the joystick are ignored.
+Note-off and note-on with velocity 0 are ignored. Notes outside 16–23 are ignored as pads (the keys below use 48–72 on channel 1).
+
+**Joystick:** steers a food point, through the same path as the left mouse button.
+- Inside the dead zone (both axes within 64 ± 8, `JOY_DEAD_ZONE`) there is no joystick food; returning there removes it.
+- Outside it, the food sits at the screen centre plus the deflection: full deflection is 60 px from the edge (`JOY_MARGIN`). The food glides there (`JOY_SMOOTHING`); an axis inside the dead zone counts as 0.
+- `JOY_INVERT_Y = False` means CC 81 = 127 is up; set it to `True` if up and down are reversed on your controller.
+- If the mouse is also placing food, the most recently started source wins.
+
+**Keys:** a key 48–72 on channel 1 sets the transpose of the grain source to note − 60 semitones (−12…+12) and sends `/mix/transpose`. It stays latched until the next key; releasing the key does nothing. Other notes on channel 1 are ignored.
 
 ## AKAI MIDIMIX
 
@@ -102,7 +112,11 @@ So with only the MPK connected you get the MPK profile. With both controllers co
 With `MIDI_DEBUG = True` (the default), every message is printed:
 - `[midi] cc=X value=Y channel=Z`: a raw knob or fader;
 - `[midi-map] cc=X -> parameter = value`: the mapped result;
-- `[pad] n  (program P, channel C)`: a pad.
+- `[pad] n  (program P, channel C)` or `[pad] n  (note N, channel C)`: a pad;
+- `[key] note N -> transpose +k`: a key;
+- `[midi] note on/off …: ignored`: a note that is neither a pad nor a key.
+
+The joystick (CC 80 / 81) is not printed: it sends a continuous stream and would flood the terminal.
 
 ### Re-mapping a control
 
@@ -118,6 +132,8 @@ With `MIDI_DEBUG = True` (the default), every message is printed:
 | the wrong device opened (`… fallback`) | Set `MIDI_INPUT_NAME` in `config.py` to part of the name printed at start |
 | `[midi] cc=…` lines but no `[midi-map]` | That CC is not in the active table: re-map it |
 | MPK pads print `note on N … ignored` or `program=N … not a pad` | The pads are not on bank A (they send numbers outside 16–23) |
+| joystick food appears with the stick at rest | Raise `JOY_DEAD_ZONE` in `config.py` (the stick may rest a few values away from 64) |
+| joystick up moves the food down | Set `JOY_INVERT_Y = True` in `config.py` |
 
 ## UDP control port 7500
 
