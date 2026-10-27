@@ -41,7 +41,7 @@ SynthFish has two halves that talk over OSC on the local machine. The Python hal
 2. handles keyboard and window events;
 3. works out the **attractor** and the **repeller**:
    - attractor: left mouse at the pointer, otherwise pad 3 or `food_amount > 0.01` at the centre;
-   - repeller: right mouse at the pointer, otherwise a pad-2 burst (1 s) or `predator_amount > 0.01` at the centre;
+   - repeller: right mouse at the pointer, otherwise a pad-2 burst (0.7 s) or `predator_amount > 0.01` at the centre;
 4. sends `/fx/predator 1` or `0` when the repeller appears or disappears (strength first on onset);
 5. grows or shrinks the flock to the `population` control (1–100);
 6. moves every fish (unless paused);

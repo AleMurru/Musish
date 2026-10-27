@@ -49,7 +49,7 @@ MIDI_NOTE_PADS_MPK = {16 + i: i + 1 for i in range(8)}  # note-on 16..23 -> pad 
 MIDI_PROFILES = {  # name substring -> (CC mapping, Program Change pads, note-on pads)
     "MPK": (MIDI_CC_MAPPING_MPK, MIDI_PC_PADS_MPK, MIDI_NOTE_PADS_MPK),
 }
-PAD_PREDATOR_BURST_S = 1.0  # pad 2: predator at the centre for this long
+PAD_PREDATOR_BURST_S = 0.7  # pad 2: predator at the centre for this long (< shoal_fx's 800 ms repeat: one kick)
 
 WIDTH = 1200
 HEIGHT = 750

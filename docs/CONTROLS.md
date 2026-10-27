@@ -63,7 +63,7 @@ Alignment stays at 1.0 with this controller. The predator is on pad 2 and the ri
 | Pad | Action |
 |---|---|
 | 1 | one kick (`/pad/kick`) |
-| 2 | scare: a predator at the centre for 1 s (same path as the right mouse button, so Max gets the predator events) |
+| 2 | scare: a predator at the centre for 0.7 s (same path as the right mouse button, so Max gets the predator events). That is shorter than the 800 ms kick repeat in `shoal_fx.maxpat`, so a pad hit gives exactly one kick; holding the right mouse button still repeats every 800 ms |
 | 3 | food at the centre, on / off |
 | 4 | calm: removes pad food, the scare and any fader-set food or predator |
 | 5–8 | play slice 1–4 of the grain source (`/pad/sample 1–4`) |
