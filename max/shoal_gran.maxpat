@@ -4336,10 +4336,10 @@
                         1700.0,
                         1380.0,
                         520.0,
-                        78.0
+                        92.0
                     ],
-                    "text": "9. TRANSPOSE (MPK keys, from Python: /mix/transpose -> s mixTranspose in the PLAUD device). st = -12..12 semitones, latched. ratio = 2^(st/12). Grains: each grain still lasts grain-length ms, but reads grain length x ratio ms of the source (span, 20 ms ramp); the span also limits the region start. Slices (pads 5-8): the 1.5 s slice reads 1500 x ratio ms; a change applies from the next pad.",
-                    "linecount": 5
+                    "text": "9. TRANSPOSE (MPK keys, from Python: /mix/transpose -> s mixTranspose in the PLAUD device). st = -12..12 semitones, latched. ratio = 2^(st/12). Grains: each grain still lasts grain-length ms, but reads grain length x ratio ms of the source (span); the ratio glides over 20 ms, grain-length changes stay instant; the span also limits the region start. Slices (pads 5-8): the 1.5 s slice reads 1500 x ratio ms; a change applies from the next pad.",
+                    "linecount": 6
                 }
             },
             {
@@ -4546,8 +4546,8 @@
                         ""
                     ],
                     "patching_rect": [
-                        1700.0,
-                        1720.0,
+                        1900.0,
+                        1600.0,
                         60.0,
                         22.0
                     ],
@@ -4565,12 +4565,12 @@
                         "bang"
                     ],
                     "patching_rect": [
-                        1700.0,
-                        1750.0,
+                        1900.0,
+                        1630.0,
                         60.0,
                         22.0
                     ],
-                    "text": "line 0. 5"
+                    "text": "line 1. 5"
                 }
             },
             {
@@ -8221,8 +8221,8 @@
             {
                 "patchline": {
                     "destination": [
-                        "obj-232",
-                        1
+                        "obj-234",
+                        0
                     ],
                     "source": [
                         "obj-230",
@@ -8245,7 +8245,7 @@
             {
                 "patchline": {
                     "destination": [
-                        "obj-234",
+                        "obj-236",
                         0
                     ],
                     "source": [
@@ -8269,8 +8269,8 @@
             {
                 "patchline": {
                     "destination": [
-                        "obj-236",
-                        0
+                        "obj-232",
+                        1
                     ],
                     "source": [
                         "obj-235",

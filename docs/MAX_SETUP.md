@@ -88,7 +88,7 @@ Git ignores audio files and `max/grains/`, so your sounds never end up in the re
   - `shoal_gran.aiff` at start, or a file chosen from the `grains/` menu;
   - after each load, `info~` reads the file length; the region (start + width) is clamped to it.
 - **Transpose:** `r mixTranspose` (−12…+12 st, from the MPK keys) gives a ratio 2^(st/12).
-  - Grains keep their duration (K1) but read *grain length* × ratio ms of the source, with a 20 ms ramp. The region start is limited using that span.
+  - Grains keep their duration (K1) but read *grain length* × ratio ms of the source. The ratio glides over 20 ms; grain-length changes stay instant. The region start is limited using that span.
   - Slices read 1500 × ratio ms in their 1.5 s; a change applies from the next pad.
   - The presentation shows it as *transpose (st, MPK keys)*.
 - **Slice player:** MPK pads 5–8 (`r padSample` 1–4) play a 1.5 s stereo slice from 10 / 30 / 55 / 80 % of the file, with 20 ms fades and their own gain.
