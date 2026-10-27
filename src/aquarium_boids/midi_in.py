@@ -22,8 +22,9 @@ class MidiControllerInput:
     Max UDP controls.
 
     Profiles: after a device is opened, the first profile whose key is contained in
-    the device name (case-insensitive) replaces the default CC mapping and adds
-    Program Change pads. Any other device keeps the default mapping (MIDIMIX).
+    the device name (case-insensitive) replaces the default CC mapping and can add
+    pads (Program Change and/or note-on), a joystick (two CCs) and keys (notes that set
+    a transpose). Any other device keeps the default mapping (MIDIMIX) and nothing else.
     Mapping entries whose parameter starts with "/" are not simulation controls:
     they are returned to the caller (an OSC address for Max) and not applied.
     """
@@ -33,7 +34,9 @@ class MidiControllerInput:
         device_name: str = "MIDIMIX",
         mapping: dict[int, tuple[str, float, float, bool]] | None = None,
         debug: bool = True,
-        profiles: dict[str, tuple[dict[int, tuple[str, float, float, bool]], dict[int, int], dict[int, int]]] | None = None,
+        profiles: dict[str, dict[str, Any]] | None = None,
+        joy_dead_zone: int = 8,
+        joy_invert_y: bool = False,
     ):
         self.device_name = device_name.lower()
         self.mapping = mapping or {}
@@ -42,6 +45,12 @@ class MidiControllerInput:
         self.profile_name = "none (MIDI input not started)"
         self.pc_pads: dict[int, int] = {}  # Program Change number -> pad number
         self.note_pads: dict[int, int] = {}  # note number (note-on, any channel) -> pad number
+        self.joystick_ccs: tuple[int, int] | None = None  # (x CC, y CC)
+        self.keys: tuple[int, int, int, int] | None = None  # (channel, lowest, highest, root)
+        self.joy_dead_zone = joy_dead_zone
+        self.joy_invert_y = joy_invert_y
+        self._joy_raw = [64, 64]
+        self._pending_transpose: int | None = None
         self._pending_pads: list[int] = []
         self.enabled = False
         self.device_id: int | None = None
@@ -83,11 +92,13 @@ class MidiControllerInput:
 
     def _select_profile(self) -> None:
         name = self._device_name_found.lower()
-        for key, (mapping, pads, note_pads) in self.profiles.items():
+        for key, profile in self.profiles.items():
             if key.lower() in name:
-                self.mapping = mapping
-                self.pc_pads = pads
-                self.note_pads = note_pads
+                self.mapping = profile.get("cc", self.mapping)
+                self.pc_pads = profile.get("pc_pads", {})
+                self.note_pads = profile.get("note_pads", {})
+                self.joystick_ccs = profile.get("joystick")
+                self.keys = profile.get("keys")
                 self.profile_name = key
                 return
         self.profile_name = "MIDIMIX (default mapping)"
@@ -96,6 +107,24 @@ class MidiControllerInput:
         """Pads (1..8) pressed since the last call, in order."""
         pads, self._pending_pads = self._pending_pads, []
         return pads
+
+    def take_transpose(self) -> int | None:
+        """Transpose (semitones) from the last key pressed since the last call, or None."""
+        transpose, self._pending_transpose = self._pending_transpose, None
+        return transpose
+
+    def joystick(self) -> tuple[float, float] | None:
+        """Joystick deflection (x right, y up), each -1..1, or None while it rests in the dead zone.
+
+        An axis inside the dead zone counts as 0, so the rest position (about 64) never drifts.
+        """
+        if self.joystick_ccs is None:
+            return None
+        offsets = [raw - 64 for raw in self._joy_raw]
+        if all(abs(o) <= self.joy_dead_zone for o in offsets):
+            return None
+        x, y = (0.0 if abs(o) <= self.joy_dead_zone else max(-1.0, min(1.0, o / 63.5)) for o in offsets)
+        return (x, -y if self.joy_invert_y else y)
 
     def stop(self) -> None:
         if self._input is not None:
@@ -166,6 +195,10 @@ class MidiControllerInput:
                     self._pending_pads.append(pad)
                     if self.debug:
                         print(f"[pad] {pad}  (note {cc}, channel {channel})")
+                elif is_on and self.keys is not None and channel == self.keys[0] and self.keys[1] <= cc <= self.keys[2]:
+                    self._pending_transpose = cc - self.keys[3]  # latched until the next key; note-off does nothing
+                    if self.debug:
+                        print(f"[key] note {cc} -> transpose {cc - self.keys[3]:+d}")
                 elif self.debug:
                     state = "on" if is_on else "off"
                     print(f"[midi] note {state} {cc} velocity={value} channel={channel}: ignored")
@@ -173,6 +206,10 @@ class MidiControllerInput:
 
             # MIDI CC messages are 0xB0..0xBF.
             if message_type != 0xB0:
+                continue
+
+            if self.joystick_ccs is not None and cc in self.joystick_ccs:  # stored, not printed (it floods)
+                self._joy_raw[self.joystick_ccs.index(cc)] = value
                 continue
 
             if self.debug and self._seen_values.get(cc) != value:

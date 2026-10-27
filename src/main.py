@@ -19,6 +19,10 @@ from aquarium_boids.config import (
     FPS,
     GRAN_MAX_VOICES,
     HEIGHT,
+    JOY_DEAD_ZONE,
+    JOY_INVERT_Y,
+    JOY_MARGIN,
+    JOY_SMOOTHING,
     MIDI_CC_MAPPING,
     MIDI_DEBUG,
     MIDI_INPUT_NAME,
@@ -188,6 +192,8 @@ def main(argv: list[str] | None = None) -> None:
         mapping=MIDI_CC_MAPPING,
         debug=MIDI_DEBUG,
         profiles=MIDI_PROFILES,
+        joy_dead_zone=JOY_DEAD_ZONE,
+        joy_invert_y=JOY_INVERT_Y,
     )
     if ENABLE_MIDI_INPUT:
         midi_input.start()
@@ -206,6 +212,10 @@ def main(argv: list[str] | None = None) -> None:
     predator_active = False
     predator_burst_until = 0.0  # pad 2
     food_pad_on = False  # pad 3
+    joy_food: Vector2 | None = None  # MPK joystick food point (smoothed), None while the stick rests
+    joy_food_since = 0.0
+    mouse_food_since = 0.0
+    mouse_left_was = False
 
     while True:
         dt = clock.tick(FPS) / (1000.0 / FPS)
@@ -236,6 +246,10 @@ def main(argv: list[str] | None = None) -> None:
             elif 5 <= pad <= 8:
                 osc.send_pad_sample(pad - 4)
 
+        transpose = midi_input.take_transpose()  # MPK keys: latched transpose for the grain source
+        if transpose is not None:
+            osc.send_transpose(transpose)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 osc.send_fx_predator(False)  # never leave Max in a predator scare
@@ -254,6 +268,22 @@ def main(argv: list[str] | None = None) -> None:
         mouse_buttons = pygame.mouse.get_pressed(num_buttons=3)
         mouse_pos = display.view.to_world(pygame.mouse.get_pos())
         attractor = mouse_pos if mouse_buttons[0] else None
+        if mouse_buttons[0] and not mouse_left_was:
+            mouse_food_since = now
+        mouse_left_was = mouse_buttons[0]
+        # MPK joystick: food at centre + deflection (full = near the edge), glides there, gone in the dead zone.
+        joy = midi_input.joystick()
+        if joy is None:
+            joy_food = None
+        else:
+            target = Vector2(WIDTH * 0.5 + joy[0] * (WIDTH * 0.5 - JOY_MARGIN),
+                             HEIGHT * 0.5 - joy[1] * (HEIGHT * 0.5 - JOY_MARGIN))  # joystick up = screen up
+            if joy_food is None:
+                joy_food = Vector2(WIDTH * 0.5, HEIGHT * 0.5)
+                joy_food_since = now
+            joy_food += (target - joy_food) * JOY_SMOOTHING
+        if joy_food is not None and (attractor is None or joy_food_since > mouse_food_since):
+            attractor = Vector2(joy_food)  # same food path as the mouse; the most recent source wins
         repeller = mouse_pos if mouse_buttons[2] else None
         if attractor is None and food_pad_on:
             attractor = Vector2(WIDTH * 0.5, HEIGHT * 0.5)

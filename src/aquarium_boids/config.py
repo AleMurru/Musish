@@ -46,8 +46,22 @@ MIDI_CC_MAPPING_MPK = {
 }  # alignment stays 1.0; predator on pad 2 / mouse; kick gain stays at the shoal_fx value
 MIDI_PC_PADS_MPK = {16 + i: i + 1 for i in range(8)}  # Program Change 16..23 -> pad 1..8
 MIDI_NOTE_PADS_MPK = {16 + i: i + 1 for i in range(8)}  # note-on 16..23 -> pad 1..8
-MIDI_PROFILES = {  # name substring -> (CC mapping, Program Change pads, note-on pads)
-    "MPK": (MIDI_CC_MAPPING_MPK, MIDI_PC_PADS_MPK, MIDI_NOTE_PADS_MPK),
+# MPK joystick (CC 80 = x, 0 = left; CC 81 = y) steers a food point; keyboard notes set a transpose.
+JOY_CC_X_MPK = 80
+JOY_CC_Y_MPK = 81
+JOY_INVERT_Y = False  # False: CC 81 = 127 is up; True: 0 is up
+JOY_DEAD_ZONE = 8  # |value - 64| <= this on both axes = centre: no joystick food
+JOY_MARGIN = 60.0  # world px kept free at the edges at full deflection
+JOY_SMOOTHING = 0.15  # per-frame glide of the joystick food point towards its target
+MIDI_KEYS_MPK = (1, 48, 72, 60)  # channel, lowest, highest, root: note-on -> transpose = note - root
+MIDI_PROFILES = {  # name substring -> what the controller adds to (or replaces in) the default MIDIMIX setup
+    "MPK": {
+        "cc": MIDI_CC_MAPPING_MPK,
+        "pc_pads": MIDI_PC_PADS_MPK,
+        "note_pads": MIDI_NOTE_PADS_MPK,
+        "joystick": (JOY_CC_X_MPK, JOY_CC_Y_MPK),
+        "keys": MIDI_KEYS_MPK,
+    },
 }
 PAD_PREDATOR_BURST_S = 0.7  # pad 2: predator at the centre for this long (< shoal_fx's 800 ms repeat: one kick)
 
