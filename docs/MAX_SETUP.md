@@ -44,7 +44,7 @@ Put your own files next to the patches:
 
 Git ignores audio files and `max/grains/`, so your sounds never end up in the repository.
 
-## shoal_fx.maxpat: predator kick and spectral shake
+## shoal_fx.maxpat: predator kick, spectral shake and reverb
 
 - **Inputs:** `r fxPredator` (1 = the scare starts, 0 = it ends) and `r fxPredatorStrength` (0–1).
 - **Repeats:**
@@ -55,10 +55,16 @@ Git ignores audio files and `max/grains/`, so your sounds never end up in the re
   - *sample*: `shoal_kick.wav` from the start, in stereo;
   - the kick-source menu chooses synth / sample / both (default: sample).
 - **Shake:** on each kick, PLAUD's `---waveshaping` (0–1) and `---spectral-warp` (−1–1) jump to base + shake × strength, then glide back to base in 400 ms.
+- **Reverb (kick only):** a long stereo reverb is added to the kick, synth and sample. The dry kick is unchanged; the reverb only listens to it. Freeverb-style, standard MSP objects only:
+  - the three dry kick signals are summed, high-passed at 150 Hz so the sub does not boom, and scaled by 0.015;
+  - 8 parallel `comb~` filters per channel (25.3–36.7 ms; the right channel is 0.52 ms longer, for width). Their feedback is set from the decay, so *decay* is the time for the tail to fall by 60 dB;
+  - a `onepole~` low-pass (*tone*, the damping), then 4 `allpass~` in series;
+  - the wet signal × 3 × mix × on (30 ms ramp) goes to the same `dac~ 1 2`.
 - **Controls:**
   - on/off, test kick, kick gain (0.8), shake amount (0.1), base waveshaping (0), base spectral warp (0), sample gain;
   - `r mixKickGain` sets the kick level (no MPK knob sends it now);
-  - MPK pad 1 (`r padKick`) fires one kick.
+  - MPK pad 1 (`r padKick`) fires one kick;
+  - reverb: on/off (on), mix 0–1 (0.35), decay 1–10 s (6 s), tone / damping 200–10000 Hz (3000 Hz).
 
 ## shoal_gran.maxpat: one grain voice per fish
 
