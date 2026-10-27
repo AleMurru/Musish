@@ -87,12 +87,12 @@ Git ignores audio files and `max/grains/`, so your sounds never end up in the re
 
 | Control | Default | MPK knob |
 |---|---|---|
-| master gain | 0.6 | K5 (`r mixGranGain`) |
-| grain length | 80 ms | K1 (`r mixGrainMs`) |
-| slice gain | 0.7 | K6 (`r mixSliceGain`) |
-| region start | 89 s | — |
-| region width | 15 s | — |
-| tone (low-pass) | 6000 Hz | — |
+| master gain | 0.614 | K5 (`r mixGranGain`) |
+| grain length | 344.7 ms | K1 (`r mixGrainMs`) |
+| slice gain | 0.457 | K6 (`r mixSliceGain`) |
+| region start | 81.3 s | — |
+| region width | 118 s | — |
+| tone (low-pass) | 2584 Hz | — |
 
 ## Console messages
 
