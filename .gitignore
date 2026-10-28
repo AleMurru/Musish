@@ -15,7 +15,6 @@ env/
 
 # Runtime logs / generated data
 logs/
-Codex/logs/
 *.log
 
 # OS / editor
@@ -24,13 +23,20 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Audio, models and Max for Live devices are never shipped (licensing / size)
+*.wav
+*.aif
+*.aiff
+*.ts
+*.ckpt
+*.amxd
+# your own grain sources for the shoal_gran menu stay local
+max/grains/
+
 # Max backups/autosaves
 *.bak
 *.maxpat~
 
 # Other local experiments
+# Claude/ was an early prototype; removed from this branch, still available in the git history
 Claude/
-aquarium/
-smoke_test.py
-Guida_utilizzo.md
-Guida_Max.md
